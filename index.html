@@ -401,7 +401,7 @@
     <div class="timer-widget" id="timer-widget"></div>
     <div class="top-links">
       <a href="about.html">How to play</a>
-      <a href="solutions.html" id="solution-link">Yesterday's solutions</a>
+      <a href="#" id="solution-link">View solution</a>
       <a href="stats.html">Your stats</a>
       <a href="past-puzzles.html">Past puzzles</a>
       <a href="contact.html">Contact</a>
@@ -819,6 +819,32 @@ function bumpStreak(stat, todayKeyStr){
   stat.lastSolvedDate = todayKeyStr;
 }
 
+function revealSolutionAsLoss(tier){
+  const puzzleHints = HINTS_SCHEDULE[dateKey] && HINTS_SCHEDULE[dateKey][tier];
+  if(!puzzleHints) return; // nothing to reveal - shouldn't happen in practice
+  const solution = puzzleHints.solution;
+  const revealedGuesses = {};
+  for(let i = 1; i < solution.length - 1; i++){
+    revealedGuesses[solution[i].length] = solution[i];
+  }
+  saveGuesses(tier, revealedGuesses);
+  localStorage.setItem(`letterladder:${dateKey}:${tier}:solutionRevealedAsLoss`, '1');
+  recordLossIfNeeded(tier);
+}
+
+function recordLossIfNeeded(tier){
+  if(isArchiveMode) return; // archive plays never count toward stats or analytics
+  const flagKey = `letterladder:${dateKey}:${tier}:lossCounted`;
+  if(localStorage.getItem(flagKey)) return;
+  localStorage.setItem(flagKey, '1');
+
+  markPlayedIfNeeded(tier);
+
+  const stats = loadStats();
+  stats[tier].currentStreak = 0; // explicitly break the streak - this is a loss
+  saveStats(stats);
+}
+
 function markPlayedIfNeeded(tier){
   if(isArchiveMode) return; // archive plays never count toward stats or analytics
   const flagKey = `letterladder:${dateKey}:${tier}:playedCounted`;
@@ -963,11 +989,30 @@ function weekendLabelSuffix(key){
   return '';
 }
 document.getElementById('date-row').textContent = prettyDate(dateKey) + weekendLabelSuffix(dateKey);
-if(isArchiveMode){
-  const solutionLink = document.getElementById('solution-link');
-  solutionLink.textContent = 'View solutions';
-  solutionLink.href = `solutions.html?date=${dateKey}`;
+
+function handleViewSolutionClick(){
+  if(isArchiveMode){
+    // Archive plays never affect stats/streaks, so there's nothing to warn about
+    window.location.href = `solutions.html?date=${dateKey}&tier=${activeTier}`;
+    return;
+  }
+  if(isTierComplete(activeTier)){
+    // Already a genuine win - viewing the solution now has no stats consequence
+    window.location.href = `solutions.html?date=${dateKey}&tier=${activeTier}`;
+    return;
+  }
+  showConfirmModal(
+    "Are you sure you want to view the solution? Your streak and stats will be affected.",
+    () => {
+      revealSolutionAsLoss(activeTier);
+      window.location.href = `solutions.html?date=${dateKey}&tier=${activeTier}`;
+    }
+  );
 }
+document.getElementById('solution-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  handleViewSolutionClick();
+});
 
 function getTodaysPuzzle(tier){
   const day = PUZZLE_SCHEDULE[dateKey];
@@ -1222,7 +1267,13 @@ function render(focusInput = false, pendingErrors = null){
   let feedbackClass = '';
   let details = [];
 
-  if(allFilled){
+  const revealedLossKey = `letterladder:${dateKey}:${activeTier}:solutionRevealedAsLoss`;
+  const isRevealedLoss = !!localStorage.getItem(revealedLossKey);
+
+  if(isRevealedLoss){
+    feedback = "The solution has been revealed - this one's locked in as a miss for today.";
+    feedbackClass = 'revealed';
+  } else if(allFilled){
     // Guarantee "played" is always counted before "solved" ever can be -
     // this covers puzzles that were already fully filled in from before
     // stats tracking existed, which would otherwise count as solved
@@ -1250,6 +1301,9 @@ function render(focusInput = false, pendingErrors = null){
   // Editing after a win is allowed (clicking a rung + its delete-X reopens
   // it), so activeLength is no longer force-reset just because isWon is
   // true - only the actual guess-acceptance/delete logic controls it now.
+  // The same applies after a revealed-loss: someone might still want to
+  // keep exploring for a different valid path, even though the loss
+  // itself is already permanently locked in for today's stats.
 
   if(activeLength === null && !isWon){
     // Always have a target box selected (without auto-focusing/opening

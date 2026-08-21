@@ -85,10 +85,10 @@ function prettyDate(key){
 
 const container = document.getElementById('past-puzzles-list');
 // Reads from hints.js directly (same file that already powers the in-game
-// hint button and the Yesterday's Solution page) rather than a separate,
-// narrower file - hints.js always covers the entire scheduled window
-// regardless of exactly when the schedule script was last run, so this
-// page can never go stale the way a generation-time-dependent file would.
+// hint button and the Solution page) rather than a separate, narrower
+// file - hints.js always covers the entire scheduled window regardless
+// of exactly when the schedule script was last run, so this page can
+// never go stale the way a generation-time-dependent file would.
 const allDayKeys = Object.keys(HINTS_SCHEDULE || {}).sort().reverse();
 const today = todayKey();
 // Strictly before today only - never show today's own puzzle here (that's

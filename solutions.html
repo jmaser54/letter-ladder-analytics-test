@@ -15,7 +15,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Yesterday's Solutions — Letter Ladder</title>
+<title>Solution — Letter Ladder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -50,28 +50,13 @@
 <body>
 <div class="wrap">
   <a class="back" href="index.html">← Back to game</a>
-  <h1 id="page-heading">Yesterday's Solutions</h1>
-  <div class="intro" id="page-intro">One possible path through yesterday's puzzles. There's usually more than one route to the summit.</div>
+  <h1 id="page-heading">Solution</h1>
+  <div class="intro" id="page-intro">One possible path through this puzzle. There's usually more than one route to the summit.</div>
   <div id="solutions-list"></div>
 </div>
 
 <script src="data/hints.js?v=1787151516"></script>
 <script>
-function yesterdayKey(){
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
-}
-function todayKey(){
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
-}
 function prettyDate(key){
   const [y,m,d] = key.split('-').map(Number);
   const dt = new Date(y, m-1, d);
@@ -79,63 +64,40 @@ function prettyDate(key){
 }
 
 const container = document.getElementById('solutions-list');
-// hints.js covers the entire scheduled window (past, today, and future -
-// same data that powers the in-game hint button), not just past days like
-// the old solutions.js did. That's what was going stale every day: this
-// page used to depend on a separate file that only ever contained
-// whatever was "already past" at the exact moment the schedule was last
-// generated. Reading from hints.js instead means yesterday's puzzle is
-// always there as long as it falls anywhere within the generated window,
-// regardless of exactly when the script last ran.
-const allDayKeys = Object.keys(HINTS_SCHEDULE || {}).sort().reverse();
-// Since this data source also includes today and future days, the
-// fallback below is explicitly restricted to days strictly before today -
-// so even in an edge case, this can never show today's or an upcoming
-// puzzle's solution early.
-const today = todayKey();
-const pastKeys = allDayKeys.filter(k => k < today);
-const wantedYesterdayKey = yesterdayKey();
+const tierNames = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
 
-// A specific past date can be requested via ?date=YYYY-MM-DD (this is what
-// each archive puzzle's "View solution" link points to). Only ever
-// accepted if it's a real, genuinely past scheduled day - otherwise this
-// safely falls back to the normal "yesterday" behavior rather than
-// showing nothing or an error.
+// This page now always shows exactly one tier's solution for one specific
+// date, requested via ?date=YYYY-MM-DD&tier=easy|medium|hard - this is
+// what the game's "View solution" link points to (whether that's today's
+// own puzzle or an archived past day). There's no more "yesterday, all
+// three tiers" default - if the params are missing or don't match a real
+// scheduled puzzle, this just shows a graceful empty state.
 const params = new URLSearchParams(window.location.search);
 const requestedDate = params.get('date');
-const isSpecificDateRequest = !!requestedDate && pastKeys.includes(requestedDate);
-const wantedKey = isSpecificDateRequest ? requestedDate : wantedYesterdayKey;
-const days = pastKeys.includes(wantedKey) ? [wantedKey] : pastKeys;
+const requestedTier = params.get('tier');
 
-if(isSpecificDateRequest){
-  document.getElementById('page-heading').textContent = 'Solutions';
-  document.getElementById('page-intro').textContent =
-    `One possible path through the ${prettyDate(wantedKey)} puzzles. There's usually more than one route to the summit.`;
-}
+const day = requestedDate && HINTS_SCHEDULE ? HINTS_SCHEDULE[requestedDate] : null;
+const puzzle = day && requestedTier ? day[requestedTier] : null;
 
-if(days.length === 0){
-  container.innerHTML = `<div class="empty-state">No solution posted yet - check back after the first day's puzzles have run!</div>`;
+if(!puzzle){
+  container.innerHTML = `<div class="empty-state">No solution to show here - head back to the game and use "View solution" on the puzzle you're playing.</div>`;
 } else {
-  const tierNames = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
-  const dayKey = days[0];
-  const day = HINTS_SCHEDULE[dayKey];
-  const tierRows = ['easy','medium','hard']
-    .filter(tier => day[tier])
-    .map(tier => {
-      const chainHtml = day[tier].solution.map((word, i) => {
-        const arrow = i > 0 ? '<span class="chain-arrow">→</span>' : '';
-        return `${arrow}<span class="chain-word">${word}</span>`;
-      }).join('');
-      return `
-        <div class="tier-row">
-          <div class="tier-label">${tierNames[tier]}</div>
-          <div class="chain">${chainHtml}</div>
-        </div>`;
-    }).join('');
+  document.getElementById('page-heading').textContent = `${tierNames[requestedTier]} Solution`;
+  document.getElementById('page-intro').textContent =
+    `One possible path through this ${tierNames[requestedTier].toLowerCase()} puzzle. There's usually more than one route to the summit.`;
+
+  const chainHtml = puzzle.solution.map((word, i) => {
+    const arrow = i > 0 ? '<span class="chain-arrow">→</span>' : '';
+    return `${arrow}<span class="chain-word">${word}</span>`;
+  }).join('');
+
   container.innerHTML = `
     <div class="day-card">
-      <div class="day-date">${prettyDate(dayKey)}</div>
-      ${tierRows}
+      <div class="day-date">${prettyDate(requestedDate)}</div>
+      <div class="tier-row">
+        <div class="tier-label">${tierNames[requestedTier]}</div>
+        <div class="chain">${chainHtml}</div>
+      </div>
     </div>`;
 }
 </script>
