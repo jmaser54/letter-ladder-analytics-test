@@ -392,6 +392,52 @@
     from{ transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
     to{ transform: translate(-50%, -50%) scale(1); opacity: 1; }
   }
+
+  .ladder-climb-overlay{ position: fixed; inset: 0; pointer-events: none; z-index: 999; }
+  .climb-ladder{
+    position: fixed;
+    right: 6vw;
+    top: -20px; bottom: -20px;
+    width: 46px;
+    pointer-events: none;
+    z-index: 999;
+    background:
+      linear-gradient(var(--rung), var(--rung)) left / 5px 100% no-repeat,
+      linear-gradient(var(--rung), var(--rung)) right / 5px 100% no-repeat,
+      repeating-linear-gradient(to bottom, transparent 0, transparent 26px, var(--rung) 26px, var(--rung) 32px);
+    animation: ladder-appear 0.3s ease;
+  }
+  @keyframes ladder-appear{
+    from{ opacity: 0; transform: translateX(20px); }
+    to{ opacity: 1; transform: translateX(0); }
+  }
+  .climb-letter{
+    position: fixed;
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: #1B2A41;
+    background: var(--rung);
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 1000;
+    left: var(--start-x);
+    top: var(--start-y);
+    animation: letter-walk-climb 2.2s ease-in forwards;
+  }
+  @keyframes letter-walk-climb{
+    0%{ left: var(--start-x); top: var(--start-y); transform: translateY(0); opacity: 1; }
+    8%{ transform: translateY(-7px); }
+    16%{ transform: translateY(0); }
+    24%{ transform: translateY(-7px); }
+    32%{ left: var(--ladder-x); transform: translateY(0); }
+    100%{ left: var(--ladder-x); top: -60px; opacity: 0; transform: translateY(0); }
+  }
 </style>
 </head>
 <body>
@@ -977,6 +1023,13 @@ function markSolvedIfNeeded(tier, guesses){
   }
 
   saveStats(stats);
+
+  // Confetti for the 1st and 2nd puzzle completed today, whichever tiers
+  // those happen to be - the 3rd (finishing all three) gets the bigger
+  // ladder-climb celebration instead, not confetti.
+  if(!TIERS.every(isTierComplete)){
+    triggerTierWinConfetti();
+  }
 }
 
 // ---------- rendering ----------
@@ -1206,9 +1259,9 @@ async function buildShareImage(){
   });
 }
 
-function triggerSummitCelebration(){
+function spawnConfetti(pieceCount){
   const colors = ['#E8A33D', '#6FBF8B', '#F5EFE0', '#D9705F'];
-  for(let i=0; i<70; i++){
+  for(let i=0; i<pieceCount; i++){
     const piece = document.createElement('div');
     piece.className = 'confetti-piece';
     piece.style.left = (Math.random()*100) + 'vw';
@@ -1218,6 +1271,16 @@ function triggerSummitCelebration(){
     document.body.appendChild(piece);
     setTimeout(()=> piece.remove(), 4200);
   }
+}
+
+function triggerTierWinConfetti(){
+  // A lighter burst for the 1st and 2nd puzzle completed each day - the
+  // 3rd (finishing all three) gets the bigger ladder-climb celebration
+  // below instead, not confetti.
+  spawnConfetti(35);
+}
+
+function showSummitBanner(){
   const banner = document.createElement('div');
   banner.className = 'summit-banner';
   banner.textContent = "Well done! You've reached the summit of today's letter ladder!";
@@ -1225,12 +1288,56 @@ function triggerSummitCelebration(){
   setTimeout(()=> banner.remove(), 4000);
 }
 
-function checkAndCelebrateIfAllComplete(){
+function triggerLadderClimbCelebration(finalWord){
+  // Once all three tiers are done for the day: the letters of the final
+  // word walk out of their box (with a bouncy little walk) and climb a
+  // ladder that appears on the right side of the screen, disappearing
+  // off the top - no confetti for this one, since it's the bigger
+  // moment. The usual winning banner shows right after the letters have
+  // all finished exiting, not at the same time.
+  const anchorEl = document.getElementById('final-word-rung');
+  if(!anchorEl){ showSummitBanner(); return; } // safety fallback
+
+  const rect = anchorEl.getBoundingClientRect();
+  const overlay = document.createElement('div');
+  overlay.className = 'ladder-climb-overlay';
+
+  const ladder = document.createElement('div');
+  ladder.className = 'climb-ladder';
+  overlay.appendChild(ladder);
+
+  // Matches the ladder's CSS position (right: 6vw, 46px wide) so the
+  // letters visually land centered on it rather than beside it.
+  const ladderCenterX = window.innerWidth - (window.innerWidth * 0.06) - 23;
+
+  const letters = finalWord.toUpperCase().split('');
+  letters.forEach((letter, i) => {
+    const el = document.createElement('div');
+    el.className = 'climb-letter';
+    el.textContent = letter;
+    const letterStartX = rect.left + (i * (rect.width / letters.length));
+    el.style.setProperty('--start-x', `${letterStartX}px`);
+    el.style.setProperty('--start-y', `${rect.top}px`);
+    el.style.setProperty('--ladder-x', `${ladderCenterX}px`);
+    el.style.animationDelay = `${i * 0.12}s`;
+    overlay.appendChild(el);
+  });
+
+  document.body.appendChild(overlay);
+
+  const totalDuration = 2200 + letters.length * 120 + 200; // animation length + staggered delays + small buffer
+  setTimeout(()=>{
+    overlay.remove();
+    showSummitBanner();
+  }, totalDuration);
+}
+
+function checkAndCelebrateIfAllComplete(finalWord){
   if(!TIERS.every(isTierComplete)) return;
   const flagKey = `letterladder:${dateKey}:summitShown`;
   if(localStorage.getItem(flagKey)) return;
   localStorage.setItem(flagKey, '1');
-  triggerSummitCelebration();
+  triggerLadderClimbCelebration(finalWord);
 }
 
 function render(focusInput = false, pendingErrors = null){
@@ -1284,7 +1391,7 @@ function render(focusInput = false, pendingErrors = null){
       feedback = "🎉 You win! Nicely climbed.";
       feedbackClass = 'win';
       markSolvedIfNeeded(activeTier, guesses);
-      checkAndCelebrateIfAllComplete();
+      checkAndCelebrateIfAllComplete(finalWord);
     } else {
       feedback = "❌ Guesses aren't a valid progression.";
       feedbackClass = 'error';
@@ -1365,7 +1472,7 @@ function render(focusInput = false, pendingErrors = null){
   }
 
   const rungsHtml = [];
-  rungsHtml.push(`<div class="rung-row"><div class="rung-count">${finalWord.length}</div><div class="rung anchor" style="${rungBoxStyle(finalWord.length)}">${finalWord}</div></div>`);
+  rungsHtml.push(`<div class="rung-row"><div class="rung-count">${finalWord.length}</div><div class="rung anchor" id="final-word-rung" style="${rungBoxStyle(finalWord.length)}">${finalWord}</div></div>`);
   for(let i = steps.length-1; i>=0; i--){
     const L = steps[i];
     const g = guesses[L];
