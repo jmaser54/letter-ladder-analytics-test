@@ -438,7 +438,12 @@
     36%{ left: calc(var(--start-x) + (var(--ladder-x) - var(--start-x)) * 0.66); top: var(--start-y); transform: translateY(0); opacity: 1; }
     42%{ top: var(--start-y); transform: translateY(-11px); opacity: 1; }
     48%{ left: var(--ladder-x); top: var(--start-y); transform: translateY(0); opacity: 1; }
-    85%{ left: var(--ladder-x); opacity: 1; transform: translateY(0); }
+    55%{ top: calc(var(--start-y) + (-60px - var(--start-y)) * 0.2); transform: translateY(-9px); opacity: 1; }
+    62%{ top: calc(var(--start-y) + (-60px - var(--start-y)) * 0.2); transform: translateY(0); opacity: 1; }
+    69%{ top: calc(var(--start-y) + (-60px - var(--start-y)) * 0.45); transform: translateY(-9px); opacity: 1; }
+    76%{ top: calc(var(--start-y) + (-60px - var(--start-y)) * 0.45); transform: translateY(0); opacity: 1; }
+    83%{ top: calc(var(--start-y) + (-60px - var(--start-y)) * 0.7); transform: translateY(-9px); opacity: 1; }
+    90%{ top: calc(var(--start-y) + (-60px - var(--start-y)) * 0.7); transform: translateY(0); opacity: 1; }
     100%{ left: var(--ladder-x); top: -60px; opacity: 0; transform: translateY(0); }
   }
 </style>
