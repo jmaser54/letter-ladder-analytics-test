@@ -647,7 +647,7 @@ function showTimerChoicePopupIfNeeded(){
   overlay.innerHTML = `
     <div class="timer-card">
       <h2>Timed or untimed?</h2>
-      <p>Use a running clock, or play at your own pace - you can toggle the timer on/off at any time.</p>
+      <p>Use a running clock, or play at your own pace - you can toggle the timer on/off at any time</p>
       <div class="timer-choice-actions">
         <button type="button" class="timer-choice-timed">Timed</button>
         <button type="button" class="timer-choice-untimed">Untimed</button>
@@ -1309,7 +1309,7 @@ function triggerTierWinConfetti(){
 function showSummitBanner(){
   const banner = document.createElement('div');
   banner.className = 'summit-banner';
-  banner.textContent = "Well done! You completed all three ladders!";
+  banner.textContent = "Well done! You've constructed all three of today's ladders!";
   document.body.appendChild(banner);
   setTimeout(()=> banner.remove(), 4000);
 }
@@ -1452,12 +1452,26 @@ function render(focusInput = false, pendingErrors = null){
     markPlayedIfNeeded(activeTier);
     const { valid, invalidSteps } = isValidChain(startingWord, guesses, finalWord);
     if(valid){
-      let winMessage = "Puzzle completed.";
+      let winMessage = "Puzzle completed";
       if(getTimerChoice() === 'timed'){
+        // Read the already-frozen elapsed time first, if this puzzle was
+        // already solved before this specific render() call (e.g.
+        // switching back to an already-won tier re-runs this same block).
+        // Without checking the frozen value first, this would keep
+        // recomputing live from the original start timestamp to "now"
+        // on every subsequent render, making the displayed time climb
+        // indefinitely even after the puzzle was already won.
+        const frozenElapsed = localStorage.getItem(timerElapsedKey(activeTier));
         const startedAt = localStorage.getItem(timerStartKey(activeTier));
-        if(startedAt){
-          const elapsedSeconds = Math.round((Date.now() - Number(startedAt)) / 1000);
-          winMessage = `Puzzle completed in ${elapsedSeconds} second${elapsedSeconds === 1 ? '' : 's'}.`;
+        const elapsedMs = frozenElapsed !== null ? Number(frozenElapsed) : (startedAt ? Date.now() - Number(startedAt) : null);
+        if(elapsedMs !== null){
+          if(elapsedMs < 60000){
+            const elapsedSecondsTenths = (elapsedMs / 1000).toFixed(1);
+            winMessage = `Puzzle completed in ${elapsedSecondsTenths} seconds`;
+          } else {
+            const elapsedSeconds = Math.round(elapsedMs / 1000);
+            winMessage = `Puzzle completed in ${elapsedSeconds} second${elapsedSeconds === 1 ? '' : 's'}`;
+          }
         }
       }
       feedback = winMessage;
