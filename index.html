@@ -430,14 +430,15 @@
   }
   @keyframes letter-walk-climb{
     0%{ left: var(--start-x); top: var(--start-y); transform: translateY(0); opacity: 1; }
-    6%{ top: var(--start-y); transform: translateY(-11px); }
-    12%{ left: calc(var(--start-x) + (var(--ladder-x) - var(--start-x)) * 0.22); top: var(--start-y); transform: translateY(0); }
-    18%{ top: var(--start-y); transform: translateY(-11px); }
-    24%{ left: calc(var(--start-x) + (var(--ladder-x) - var(--start-x)) * 0.44); top: var(--start-y); transform: translateY(0); }
-    30%{ top: var(--start-y); transform: translateY(-11px); }
-    36%{ left: calc(var(--start-x) + (var(--ladder-x) - var(--start-x)) * 0.66); top: var(--start-y); transform: translateY(0); }
-    42%{ top: var(--start-y); transform: translateY(-11px); }
-    48%{ left: var(--ladder-x); top: var(--start-y); transform: translateY(0); }
+    6%{ top: var(--start-y); transform: translateY(-11px); opacity: 1; }
+    12%{ left: calc(var(--start-x) + (var(--ladder-x) - var(--start-x)) * 0.22); top: var(--start-y); transform: translateY(0); opacity: 1; }
+    18%{ top: var(--start-y); transform: translateY(-11px); opacity: 1; }
+    24%{ left: calc(var(--start-x) + (var(--ladder-x) - var(--start-x)) * 0.44); top: var(--start-y); transform: translateY(0); opacity: 1; }
+    30%{ top: var(--start-y); transform: translateY(-11px); opacity: 1; }
+    36%{ left: calc(var(--start-x) + (var(--ladder-x) - var(--start-x)) * 0.66); top: var(--start-y); transform: translateY(0); opacity: 1; }
+    42%{ top: var(--start-y); transform: translateY(-11px); opacity: 1; }
+    48%{ left: var(--ladder-x); top: var(--start-y); transform: translateY(0); opacity: 1; }
+    85%{ left: var(--ladder-x); opacity: 1; transform: translateY(0); }
     100%{ left: var(--ladder-x); top: -60px; opacity: 0; transform: translateY(0); }
   }
 </style>
