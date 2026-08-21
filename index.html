@@ -1371,7 +1371,13 @@ function checkAndCelebrateIfAllComplete(finalWord){
   const flagKey = `letterladder:${dateKey}:summitShown`;
   if(localStorage.getItem(flagKey)) return;
   localStorage.setItem(flagKey, '1');
-  triggerLadderClimbCelebration(finalWord);
+  // Deferred: this render() call is still mid-flight and about to
+  // reassign panel.innerHTML with a fresh copy of the final-word box -
+  // triggering immediately would mean modifying a DOM element that's
+  // seconds away from being wiped out and replaced. Waiting a tick lets
+  // render() finish first, so this operates on the box that's actually
+  // visible on the page.
+  setTimeout(() => triggerLadderClimbCelebration(finalWord), 0);
 }
 
 function render(focusInput = false, pendingErrors = null){
