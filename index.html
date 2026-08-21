@@ -620,7 +620,7 @@ const TIMER_CHOICE_MADE_KEY = 'letterladder:timerChoiceMade';
 function showTimerChoicePopupIfNeeded(){
   if(localStorage.getItem(TIMER_CHOICE_MADE_KEY)){
     startTimerIfNeeded(activeTier);
-    render();
+    render(!isTouchDevice);
     return;
   }
 
@@ -643,7 +643,7 @@ function showTimerChoicePopupIfNeeded(){
     localStorage.setItem(TIMER_CHOICE_MADE_KEY, '1');
     overlay.remove();
     startTimerIfNeeded(activeTier);
-    render();
+    render(!isTouchDevice);
   }
   bindTapAction(overlay.querySelector('.timer-choice-timed'), ()=>choose('timed'));
   bindTapAction(overlay.querySelector('.timer-choice-untimed'), ()=>choose('untimed'));
@@ -2098,10 +2098,10 @@ document.getElementById('tabs').addEventListener('click', (e)=>{
   localStorage.setItem('letterladder:activeTier', activeTier);
   activeLength = null;
   startTimerIfNeeded(activeTier);
-  render();
+  render(!isTouchDevice);
 });
 
-render();
+render(!isTouchDevice);
 showHowToPlayPopupIfNeeded();
 timerTickInterval = setInterval(renderTimerWidget, 1000);
 
