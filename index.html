@@ -327,9 +327,10 @@
   .timer-choice-actions button{
     flex:1; border:none; border-radius:10px; padding:12px 10px; cursor:pointer;
     font-family:'Inter',sans-serif; font-weight:700; font-size:0.9rem;
+    background: rgba(245,239,224,0.1); color: var(--ink);
+    transition: background 0.15s ease, color 0.15s ease;
   }
-  .timer-choice-timed{ background: var(--amber); color:#1B2A41; }
-  .timer-choice-untimed{ background: rgba(245,239,224,0.1); color: var(--ink); }
+  .timer-choice-actions button:hover{ background: var(--amber); color: #1B2A41; }
 
   .timer-widget{
     position: absolute; top: 0; right: 0;
@@ -570,7 +571,7 @@ function showTimerChoicePopupIfNeeded(){
   overlay.innerHTML = `
     <div class="timer-card">
       <h2>Timed or untimed?</h2>
-      <p>Play with a running clock, or take your time - you can switch anytime from the toggle on the page.</p>
+      <p>Use a running clock, or play at your own pace - you can toggle the timer on/off at any time.</p>
       <div class="timer-choice-actions">
         <button type="button" class="timer-choice-timed">Timed</button>
         <button type="button" class="timer-choice-untimed">Untimed</button>
