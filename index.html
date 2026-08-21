@@ -719,6 +719,13 @@ function formatElapsed(ms){
   const s = totalSeconds % 60;
   return `${m}:${String(s).padStart(2,'0')}`;
 }
+function startTimerIfNeeded(tier){
+  if(isArchiveMode) return; // archive plays never get timed
+  if(!(PUZZLE_SCHEDULE[dateKey] && PUZZLE_SCHEDULE[dateKey][tier])) return; // nothing scheduled to time
+  if(localStorage.getItem(timerElapsedKey(tier))) return; // already solved and frozen
+  if(localStorage.getItem(timerStartKey(tier))) return; // already started
+  localStorage.setItem(timerStartKey(tier), String(Date.now()));
+}
 let timerTickInterval = null;
 
 function renderTimerWidget(){
@@ -868,12 +875,6 @@ function markStartedIfNeeded(tier){
   const flagKey = `letterladder:${dateKey}:${tier}:startedCounted`;
   if(localStorage.getItem(flagKey)) return;
   localStorage.setItem(flagKey, '1');
-
-  // Record when the timer started for this tier - stored regardless of
-  // whether the player is currently in timed or untimed mode, so the
-  // timer shows the correct elapsed time immediately if they switch to
-  // timed mode partway through.
-  localStorage.setItem(timerStartKey(tier), String(Date.now()));
 
   if(typeof gtag === 'function'){
     gtag('event', 'puzzle_started', {
@@ -1883,9 +1884,11 @@ document.getElementById('tabs').addEventListener('click', (e)=>{
   activeTier = tab.dataset.tier;
   localStorage.setItem('letterladder:activeTier', activeTier);
   activeLength = null;
+  startTimerIfNeeded(activeTier);
   render();
 });
 
+startTimerIfNeeded(activeTier);
 render();
 showHowToPlayPopupIfNeeded();
 timerTickInterval = setInterval(renderTimerWidget, 1000);
