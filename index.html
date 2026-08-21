@@ -48,7 +48,7 @@
     padding: 20px 16px 12px;
   }
 
-  header{ text-align:center; margin-bottom: 12px; flex-shrink:0; }
+  header{ position: relative; text-align:center; margin-bottom: 12px; flex-shrink:0; }
   .brand{
     font-family:'Fraunces', serif;
     font-weight:700;
@@ -311,11 +311,48 @@
     display: inline-block; margin: 3px 0; line-height: 1.4;
   }
 
+  .timer-overlay{
+    position: fixed; inset: 0; background: rgba(10,16,26,0.6);
+    display: flex; align-items:center; justify-content:center;
+    z-index: 1000; padding: 20px;
+  }
+  .timer-card{
+    background: var(--bg-panel); border-radius: 18px; padding: 26px 24px;
+    max-width: 340px; width: 100%; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .timer-card h2{ font-family:'Fraunces',serif; margin-top:0; margin-bottom: 10px; }
+  .timer-card p{ color: var(--ink-dim); font-size: 0.9rem; margin-bottom: 20px; }
+  .timer-choice-actions{ display:flex; gap:10px; }
+  .timer-choice-actions button{
+    flex:1; border:none; border-radius:10px; padding:12px 10px; cursor:pointer;
+    font-family:'Inter',sans-serif; font-weight:700; font-size:0.9rem;
+  }
+  .timer-choice-timed{ background: var(--amber); color:#1B2A41; }
+  .timer-choice-untimed{ background: rgba(245,239,224,0.1); color: var(--ink); }
+
+  .timer-widget{
+    position: absolute; top: 0; right: 0;
+    display: flex; align-items:center; gap: 8px;
+  }
+  .timer-display{
+    font-family:'Fraunces',serif; font-weight:700; font-variant-numeric: tabular-nums;
+    color: var(--amber); font-size: 0.95rem; min-width: 3.2em;
+  }
+  .timer-toggle{
+    background: none; border: none; color: var(--ink-dim); text-decoration: underline dotted;
+    font-family:'Inter',sans-serif; font-size: 0.72rem; cursor: pointer; padding: 4px 0;
+  }
+  .timer-toggle:hover{ color: var(--amber); }
+
   footer{ text-align:center; margin-top: 8px; color: var(--ink-dim); font-size: 0.7rem; flex-shrink:0; }
 
   @media (max-width: 420px){
     .rung{ min-width: calc(var(--rung-minw, 140px) * 0.8); }
     .brand{ font-size: 1.7rem; }
+    .timer-widget{ flex-direction: column; align-items: flex-end; gap: 2px; }
+    .timer-display{ font-size: 0.85rem; min-width: 0; }
+    .timer-toggle{ font-size: 0.65rem; }
   }
 
   .confetti-piece{
@@ -360,11 +397,12 @@
 <div class="wrap">
   <header>
     <h1 class="brand">Letter Ladder</h1>
+    <div class="timer-widget" id="timer-widget"></div>
     <div class="top-links">
       <a href="about.html">How to play</a>
       <a href="solutions.html" id="solution-link">Yesterday's solutions</a>
       <a href="stats.html">Your stats</a>
-      <a href="past-puzzles.html">Past Puzzles</a>
+      <a href="past-puzzles.html">Past puzzles</a>
       <a href="contact.html">Contact</a>
       <a href="https://www.instagram.com/letterladder" target="_blank" rel="noopener" class="logo-link" aria-label="Follow Letter Ladder on Instagram">
         <svg width="22" height="22" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
@@ -491,7 +529,10 @@ function showConfirmModal(message, onConfirm){
 
 const HOWTO_SEEN_KEY = 'letterladder:howToPlaySeen';
 function showHowToPlayPopupIfNeeded(){
-  if(localStorage.getItem(HOWTO_SEEN_KEY)) return;
+  if(localStorage.getItem(HOWTO_SEEN_KEY)){
+    showTimerChoicePopupIfNeeded();
+    return;
+  }
 
   const overlay = document.createElement('div');
   overlay.className = 'howto-overlay';
@@ -514,9 +555,38 @@ function showHowToPlayPopupIfNeeded(){
   function close(){
     localStorage.setItem(HOWTO_SEEN_KEY, '1');
     overlay.remove();
+    showTimerChoicePopupIfNeeded();
   }
   bindTapAction(overlay.querySelector('.howto-close'), close);
   overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+}
+
+const TIMER_CHOICE_MADE_KEY = 'letterladder:timerChoiceMade';
+function showTimerChoicePopupIfNeeded(){
+  if(localStorage.getItem(TIMER_CHOICE_MADE_KEY)) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'timer-overlay';
+  overlay.innerHTML = `
+    <div class="timer-card">
+      <h2>Timed or untimed?</h2>
+      <p>Play with a running clock, or take your time - you can switch anytime from the toggle on the page.</p>
+      <div class="timer-choice-actions">
+        <button type="button" class="timer-choice-timed">Timed</button>
+        <button type="button" class="timer-choice-untimed">Untimed</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  function choose(choice){
+    setTimerChoice(choice);
+    localStorage.setItem(TIMER_CHOICE_MADE_KEY, '1');
+    overlay.remove();
+    render();
+  }
+  bindTapAction(overlay.querySelector('.timer-choice-timed'), ()=>choose('timed'));
+  bindTapAction(overlay.querySelector('.timer-choice-untimed'), ()=>choose('untimed'));
 }
 
 function joinAnd(items){
@@ -637,6 +707,52 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 let keyboardEnabled = isTouchDevice ? (localStorage.getItem('letterladder:keyboardEnabled') === 'true') : true; // bank-first on mobile, always-on on desktop
 const { key: dateKey, isArchive: isArchiveMode } = resolveDateKey();
 
+// ---------- optional per-puzzle timer ----------
+const TIMER_CHOICE_KEY = 'letterladder:timerChoice';
+function getTimerChoice(){ return localStorage.getItem(TIMER_CHOICE_KEY) || 'untimed'; }
+function setTimerChoice(choice){ localStorage.setItem(TIMER_CHOICE_KEY, choice); }
+function timerStartKey(tier){ return `letterladder:${dateKey}:${tier}:timerStartedAt`; }
+function timerElapsedKey(tier){ return `letterladder:${dateKey}:${tier}:timerElapsedMs`; }
+function formatElapsed(ms){
+  const totalSeconds = Math.floor(ms / 1000);
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+let timerTickInterval = null;
+
+function renderTimerWidget(){
+  const widget = document.getElementById('timer-widget');
+  if(!widget) return;
+
+  if(isArchiveMode){
+    widget.innerHTML = '';
+    return;
+  }
+
+  const choice = getTimerChoice();
+  let timeHtml = '';
+  if(choice === 'timed'){
+    const frozenElapsed = localStorage.getItem(timerElapsedKey(activeTier));
+    const startedAt = localStorage.getItem(timerStartKey(activeTier));
+    let elapsedMs;
+    if(frozenElapsed !== null){
+      elapsedMs = Number(frozenElapsed);
+    } else if(startedAt !== null){
+      elapsedMs = Date.now() - Number(startedAt);
+    } else {
+      elapsedMs = 0;
+    }
+    timeHtml = `<span class="timer-display">${formatElapsed(elapsedMs)}</span>`;
+  }
+
+  widget.innerHTML = `${timeHtml}<button type="button" class="timer-toggle">${choice === 'timed' ? 'Turn off timer' : 'Turn on timer'}</button>`;
+  bindTapAction(widget.querySelector('.timer-toggle'), ()=>{
+    setTimerChoice(choice === 'timed' ? 'untimed' : 'timed');
+    render();
+  });
+}
+
 function storageKey(tier){ return `letterladder:${dateKey}:${tier}`; }
 function loadGuesses(tier){
   try{
@@ -753,6 +869,12 @@ function markStartedIfNeeded(tier){
   if(localStorage.getItem(flagKey)) return;
   localStorage.setItem(flagKey, '1');
 
+  // Record when the timer started for this tier - stored regardless of
+  // whether the player is currently in timed or untimed mode, so the
+  // timer shows the correct elapsed time immediately if they switch to
+  // timed mode partway through.
+  localStorage.setItem(timerStartKey(tier), String(Date.now()));
+
   if(typeof gtag === 'function'){
     gtag('event', 'puzzle_started', {
       tier: tier,
@@ -766,6 +888,11 @@ function markSolvedIfNeeded(tier, guesses){
   const flagKey = `letterladder:${dateKey}:${tier}:solvedCounted`;
   if(localStorage.getItem(flagKey)) return;
   localStorage.setItem(flagKey, '1');
+
+  const startedAt = localStorage.getItem(timerStartKey(tier));
+  if(startedAt){
+    localStorage.setItem(timerElapsedKey(tier), String(Date.now() - Number(startedAt)));
+  }
 
   // Track puzzle completions in GA4. Guarded since ad blockers commonly
   // block analytics scripts entirely - that should never be able to
@@ -1604,6 +1731,7 @@ function render(focusInput = false, pendingErrors = null){
       newGuesses[L] = raw;
       saveGuesses(activeTier, newGuesses);
       lastFeedback[activeTier] = null;
+      markStartedIfNeeded(activeTier);
 
       // Auto-advance to the next incomplete box - the highest unfilled
       // one, not the lowest. On iOS specifically, explicitly blurring the
@@ -1745,6 +1873,8 @@ function render(focusInput = false, pendingErrors = null){
       }, 120);
     }, { passive: true });
   }
+
+  renderTimerWidget();
 }
 
 document.getElementById('tabs').addEventListener('click', (e)=>{
@@ -1758,6 +1888,7 @@ document.getElementById('tabs').addEventListener('click', (e)=>{
 
 render();
 showHowToPlayPopupIfNeeded();
+timerTickInterval = setInterval(renderTimerWidget, 1000);
 
 </script>
 </body>
