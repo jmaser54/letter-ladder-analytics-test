@@ -50,8 +50,8 @@
 <body>
 <div class="wrap">
   <a class="back" href="index.html">← Back to game</a>
-  <h1 id="page-heading">Solution</h1>
-  <div class="intro" id="page-intro">One possible path through this puzzle. There's usually more than one route to the summit.</div>
+  <h1 id="page-heading">Puzzle Solution</h1>
+  <div class="intro" id="page-intro">One possible solution to the puzzle. There's usually more than one viable path.</div>
   <div id="solutions-list"></div>
 </div>
 
@@ -82,9 +82,9 @@ const puzzle = day && requestedTier ? day[requestedTier] : null;
 if(!puzzle){
   container.innerHTML = `<div class="empty-state">No solution to show here - head back to the game and use "View solution" on the puzzle you're playing.</div>`;
 } else {
-  document.getElementById('page-heading').textContent = `${tierNames[requestedTier]} Solution`;
+  document.getElementById('page-heading').textContent = 'Puzzle Solution';
   document.getElementById('page-intro').textContent =
-    `One possible path through this ${tierNames[requestedTier].toLowerCase()} puzzle. There's usually more than one route to the summit.`;
+    "One possible solution to the puzzle. There's usually more than one viable path.";
 
   const chainHtml = puzzle.solution.map((word, i) => {
     const arrow = i > 0 ? '<span class="chain-arrow">→</span>' : '';
