@@ -2118,6 +2118,7 @@ document.getElementById('tabs').addEventListener('click', (e)=>{
   activeTier = tab.dataset.tier;
   localStorage.setItem('letterladder:activeTier', activeTier);
   activeLength = null;
+  document.querySelectorAll('.confetti-piece').forEach(piece => piece.remove());
   startTimerIfNeeded(activeTier);
   render(!isTouchDevice);
 });
