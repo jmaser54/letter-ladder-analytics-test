@@ -442,8 +442,8 @@
      so returning visitors' browsers are guaranteed to fetch the new version
      instead of a cached copy. -->
 <script src="data/words.js?v=2"></script>
-<script src="data/puzzles.js?v=1787151516"></script>
-<script src="data/hints.js?v=1787151516"></script>
+<script src="data/puzzles.js?v=1787319251"></script>
+<script src="data/hints.js?v=1787319251"></script>
 <script>
 // ---------- date helpers ----------
 function todayKey(){
@@ -1271,7 +1271,7 @@ function render(focusInput = false, pendingErrors = null){
   const isRevealedLoss = !!localStorage.getItem(revealedLossKey);
 
   if(isRevealedLoss){
-    feedback = "The solution has been revealed - this one's locked in as a miss for today.";
+    feedback = '';
     feedbackClass = 'revealed';
   } else if(allFilled){
     // Guarantee "played" is always counted before "solved" ever can be -
