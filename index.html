@@ -397,7 +397,6 @@
   .climb-ladder{
     position: fixed;
     right: 6vw;
-    top: -20px; bottom: -20px;
     width: 46px;
     pointer-events: none;
     z-index: 999;
@@ -415,11 +414,9 @@
     position: fixed;
     font-family: 'Fraunces', serif;
     font-weight: 700;
-    font-size: 1.3rem;
-    color: #1B2A41;
-    background: var(--rung);
+    font-size: 1.5rem;
+    color: var(--ink);
     width: 30px; height: 30px;
-    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -428,14 +425,15 @@
     z-index: 1000;
     left: var(--start-x);
     top: var(--start-y);
-    animation: letter-walk-climb 2.2s ease-in forwards;
+    animation: letter-walk-climb 5.5s ease-in forwards;
   }
   @keyframes letter-walk-climb{
     0%{ left: var(--start-x); top: var(--start-y); transform: translateY(0); opacity: 1; }
-    8%{ transform: translateY(-7px); }
-    16%{ transform: translateY(0); }
-    24%{ transform: translateY(-7px); }
-    32%{ left: var(--ladder-x); transform: translateY(0); }
+    10%{ transform: translateY(-10px); }
+    20%{ transform: translateY(0); }
+    30%{ transform: translateY(-10px); }
+    40%{ transform: translateY(0); }
+    45%{ left: var(--ladder-x); transform: translateY(0); }
     100%{ left: var(--ladder-x); top: -60px; opacity: 0; transform: translateY(0); }
   }
 </style>
@@ -1304,6 +1302,12 @@ function triggerLadderClimbCelebration(finalWord){
 
   const ladder = document.createElement('div');
   ladder.className = 'climb-ladder';
+  // The ladder's base sits at the same height as the letters' starting
+  // position (the final-word box), extending only upward off the top of
+  // the screen from there - not spanning the full viewport - so it
+  // visually reads as "walk to the ladder's base, then climb up."
+  ladder.style.top = '-20px';
+  ladder.style.bottom = `${window.innerHeight - rect.top}px`;
   overlay.appendChild(ladder);
 
   // Matches the ladder's CSS position (right: 6vw, 46px wide) so the
@@ -1325,7 +1329,7 @@ function triggerLadderClimbCelebration(finalWord){
 
   document.body.appendChild(overlay);
 
-  const totalDuration = 2200 + letters.length * 120 + 200; // animation length + staggered delays + small buffer
+  const totalDuration = 5500 + letters.length * 120 + 200; // animation length + staggered delays + small buffer
   setTimeout(()=>{
     overlay.remove();
     showSummitBanner();
