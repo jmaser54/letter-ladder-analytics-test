@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XVRY6X34NX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XVRY6X34NX');
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>How to Play — Letter Ladder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1B2A41; --bg-panel:#24384F; --rung:#F5EFE0; --ink:#F5EFE0; --ink-dim:#9FB3C8; --amber:#E8A33D;
+  }
+  body{
+    margin:0; padding: 32px 16px 80px;
+    background: radial-gradient(120% 140% at 50% -10%, #24384F 0%, #1B2A41 55%, #142132 100%);
+    color: var(--ink); font-family:'Inter',system-ui,sans-serif;
+  }
+  .wrap{ max-width: 560px; margin:0 auto; }
+  h1{ font-family:'Fraunces',serif; font-weight:700; font-size:2rem; margin-bottom:4px; }
+  .credit{ color: var(--ink-dim); margin-bottom: 24px; }
+  a{ color: var(--amber); }
+  .panel{ background: var(--bg-panel); border-radius:18px; padding: 26px 24px; margin-bottom:20px; box-shadow: 0 20px 50px rgba(0,0,0,0.35); }
+  .example-word{
+    font-family:'Fraunces',serif; background: var(--rung); color:#1B2A41;
+    padding: 2px 8px; border-radius:6px; font-weight:600; text-transform: uppercase;
+    display: inline-block; margin: 3px 0; line-height: 1.4;
+  }
+  .back{ display:inline-block; margin-bottom: 22px; color: var(--ink-dim); text-decoration:none; }
+  .back:hover{ color: var(--amber); }
+  ul{ line-height:1.7; }
+  .footer-note{ color: var(--ink-dim); font-size: 0.9rem; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Back to game</a>
+  <h1>Letter Ladder</h1>
+  <div class="credit">Created by Jeff Maser</div>
+
+  <div class="panel">
+    <h2 style="font-family:'Fraunces',serif; margin-top:0;">How to Play</h2>
+    <p>Build a ladder by filling in the missing rungs. Each rung adds exactly <strong>one letter</strong> to the word below it — you can rearrange the letters however you like, as long as every letter carries up plus the new one.</p>
+    <ul>
+      <li>Words can be guessed in any order</li>
+      <li><span class="example-word">not</span> could climb to <span class="example-word">tone</span>, <span class="example-word">note</span>, or <span class="example-word">torn</span></li>
+      <li>A letter can repeat — <span class="example-word">lead</span> can become <span class="example-word">ladle</span> by adding a second "L"</li>
+      <li>Every word in the ladder must be a real English word</li>
+    </ul>
+    <p>There's usually more than one path to the top — how many can you find?</p>
+  </div>
+
+  <div class="footer-note">
+    <p>All puzzles handmade by Jeff Maser.</p>
+    <p>Dictionary adapted from the <a href="https://github.com/zeisler/scrabble" target="_blank">zeisler/scrabble</a> project on GitHub.</p>
+  </div>
+</div>
+</body>
+</html>

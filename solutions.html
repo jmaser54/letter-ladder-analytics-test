@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XVRY6X34NX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XVRY6X34NX');
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Yesterday's Solutions — Letter Ladder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1B2A41; --bg-panel:#24384F; --rung:#F5EFE0; --ink:#F5EFE0; --ink-dim:#9FB3C8; --amber:#E8A33D;
+  }
+  body{
+    margin:0; padding: 32px 16px 80px;
+    background: radial-gradient(120% 140% at 50% -10%, #24384F 0%, #1B2A41 55%, #142132 100%);
+    color: var(--ink); font-family:'Inter',system-ui,sans-serif;
+  }
+  .wrap{ max-width: 560px; margin:0 auto; }
+  h1{ font-family:'Fraunces',serif; font-weight:700; font-size:2rem; margin-bottom:4px; }
+  a{ color: var(--amber); }
+  .back{ display:inline-block; margin-bottom: 22px; color: var(--ink-dim); text-decoration:none; }
+  .back:hover{ color: var(--amber); }
+  .intro{ color: var(--ink-dim); margin-bottom: 24px; }
+
+  .day-card{ background: var(--bg-panel); border-radius:18px; padding: 20px 22px; margin-bottom:18px; box-shadow: 0 20px 50px rgba(0,0,0,0.35); }
+  .day-date{ font-family:'Fraunces',serif; font-weight:700; font-size:1.2rem; margin-bottom:14px; }
+  .tier-row{ margin-bottom: 14px; }
+  .tier-row:last-child{ margin-bottom: 0; }
+  .tier-label{ font-size:0.72rem; text-transform:uppercase; letter-spacing:0.1em; color: var(--amber); font-weight:700; margin-bottom:6px; }
+  .chain{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-family:'Fraunces',serif; }
+  .chain-word{ background: var(--rung); color:#1B2A41; padding:4px 10px; border-radius:6px; font-weight:600; text-transform:uppercase; font-size:0.9rem; }
+  .chain-arrow{ color: var(--ink-dim); }
+
+  .empty-state{ text-align:center; color: var(--ink-dim); padding: 40px 20px; background: var(--bg-panel); border-radius:18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Back to game</a>
+  <h1 id="page-heading">Yesterday's Solutions</h1>
+  <div class="intro" id="page-intro">One possible path through yesterday's puzzles. There's usually more than one route to the summit.</div>
+  <div id="solutions-list"></div>
+</div>
+
+<script src="data/hints.js?v=1787151516"></script>
+<script>
+function yesterdayKey(){
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function todayKey(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function prettyDate(key){
+  const [y,m,d] = key.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return dt.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+}
+
+const container = document.getElementById('solutions-list');
+// hints.js covers the entire scheduled window (past, today, and future -
+// same data that powers the in-game hint button), not just past days like
+// the old solutions.js did. That's what was going stale every day: this
+// page used to depend on a separate file that only ever contained
+// whatever was "already past" at the exact moment the schedule was last
+// generated. Reading from hints.js instead means yesterday's puzzle is
+// always there as long as it falls anywhere within the generated window,
+// regardless of exactly when the script last ran.
+const allDayKeys = Object.keys(HINTS_SCHEDULE || {}).sort().reverse();
+// Since this data source also includes today and future days, the
+// fallback below is explicitly restricted to days strictly before today -
+// so even in an edge case, this can never show today's or an upcoming
+// puzzle's solution early.
+const today = todayKey();
+const pastKeys = allDayKeys.filter(k => k < today);
+const wantedYesterdayKey = yesterdayKey();
+
+// A specific past date can be requested via ?date=YYYY-MM-DD (this is what
+// each archive puzzle's "View solution" link points to). Only ever
+// accepted if it's a real, genuinely past scheduled day - otherwise this
+// safely falls back to the normal "yesterday" behavior rather than
+// showing nothing or an error.
+const params = new URLSearchParams(window.location.search);
+const requestedDate = params.get('date');
+const isSpecificDateRequest = !!requestedDate && pastKeys.includes(requestedDate);
+const wantedKey = isSpecificDateRequest ? requestedDate : wantedYesterdayKey;
+const days = pastKeys.includes(wantedKey) ? [wantedKey] : pastKeys;
+
+if(isSpecificDateRequest){
+  document.getElementById('page-heading').textContent = 'Solutions';
+  document.getElementById('page-intro').textContent =
+    `One possible path through the ${prettyDate(wantedKey)} puzzles. There's usually more than one route to the summit.`;
+}
+
+if(days.length === 0){
+  container.innerHTML = `<div class="empty-state">No solution posted yet - check back after the first day's puzzles have run!</div>`;
+} else {
+  const tierNames = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+  const dayKey = days[0];
+  const day = HINTS_SCHEDULE[dayKey];
+  const tierRows = ['easy','medium','hard']
+    .filter(tier => day[tier])
+    .map(tier => {
+      const chainHtml = day[tier].solution.map((word, i) => {
+        const arrow = i > 0 ? '<span class="chain-arrow">→</span>' : '';
+        return `${arrow}<span class="chain-word">${word}</span>`;
+      }).join('');
+      return `
+        <div class="tier-row">
+          <div class="tier-label">${tierNames[tier]}</div>
+          <div class="chain">${chainHtml}</div>
+        </div>`;
+    }).join('');
+  container.innerHTML = `
+    <div class="day-card">
+      <div class="day-date">${prettyDate(dayKey)}</div>
+      ${tierRows}
+    </div>`;
+}
+</script>
+</body>
+</html>

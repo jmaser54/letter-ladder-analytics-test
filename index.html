@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XVRY6X34NX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XVRY6X34NX');
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-visual">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Letter Ladder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1B2A41;
+    --bg-panel: #24384F;
+    --rung: #F5EFE0;
+    --rung-empty: rgba(245,239,224,0.08);
+    --ink: #F5EFE0;
+    --ink-dim: #9FB3C8;
+    --amber: #E8A33D;
+    --red: #D9705F;
+    --blue: #5B9BD5;
+    --green: #6FBF8B;
+  }
+  *{box-sizing:border-box;}
+  html, body{ height: 100%; }
+  body{
+    margin:0;
+    background: radial-gradient(120% 140% at 50% -10%, #24384F 0%, #1B2A41 55%, #142132 100%);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .wrap{
+    max-width: 560px; margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 16px 12px;
+  }
+
+  header{ text-align:center; margin-bottom: 12px; flex-shrink:0; }
+  .brand{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size: 2rem;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .brand .rung-i{ color: var(--amber); }
+  .top-links{
+    display:flex; flex-wrap:wrap; justify-content:center; gap:8px 16px; margin-top:6px; font-size: 0.8rem;
+  }
+  .top-links a{ color: var(--ink-dim); text-decoration:none; border-bottom: 1px dotted var(--ink-dim); }
+  .top-links a:hover{ color: var(--amber); border-color: var(--amber); }
+  .top-links .logo-link{ display:inline-flex; align-items:center; border-bottom:none; line-height:0; }
+  .top-links .logo-link svg{ display:block; border-radius:50%; transition:opacity 0.15s ease; }
+  .top-links .logo-link:hover svg{ opacity:0.8; }
+
+  .date-row{
+    text-align:center; color: var(--ink-dim); font-size: 0.8rem; margin-bottom: 10px;
+    letter-spacing: 0.03em; text-transform: uppercase; flex-shrink:0;
+  }
+
+  .tabs{
+    display:flex; background: rgba(0,0,0,0.2); border-radius: 999px; padding: 4px; margin-bottom: 14px;
+    flex-shrink:0;
+  }
+  .tab{
+    flex:1; text-align:center; padding: 9px 0; border-radius: 999px; cursor:pointer;
+    font-weight:600; font-size:0.9rem; color: var(--ink-dim); transition: all 0.15s ease;
+    user-select:none;
+  }
+  .tab.active{ background: var(--amber); color: #1B2A41; }
+  .tab .dot{ display:none; }
+
+  .panel{
+    background: var(--bg-panel);
+    border-radius: 18px;
+    padding: 18px 18px 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    display: flex;
+    flex-direction: column;
+  }
+
+
+  .ladder-scroll{
+    /* No longer its own internal scroll region - the whole page scrolls
+       naturally now via the browser's own scrollbar, which handles the
+       on-screen keyboard correctly without any custom viewport math. */
+    padding: 2px 2px;
+  }
+  .ladder{
+    display:flex; flex-direction:column; align-items:center; gap: var(--rung-gap, 10px);
+    position: relative;
+    padding: 10px 30px;
+    margin: 0 auto;
+    width: -webkit-fit-content;
+    width: fit-content;
+  }
+
+  @keyframes fade-away{
+    0%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+  .ladder.fading-out{
+    animation: fade-away 0.92s ease-in forwards;
+  }
+
+  .rung-row{
+    display:grid; grid-template-columns: 22px 1fr 22px; align-items:center; column-gap:12px; width:100%;
+    position: relative;
+  }
+  .rung-row > .rung{ justify-self: center; }
+  .rung-count{ width: 22px; text-align:right; color: var(--ink-dim); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+  .delete-guess-btn{
+    width: 24px; height: 38px;
+    border: none; background: none;
+    color: #FF5A45;
+    font-size: 1.9rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    display: flex; align-items:center; justify-content:center;
+    padding: 0;
+    transition: transform 0.1s ease, filter 0.1s ease;
+  }
+  .delete-guess-btn:hover{ filter: brightness(1.15); }
+  .delete-guess-btn:active{ transform: scale(0.85); }
+  .rung{
+    font-family:'Fraunces', serif;
+    font-size: var(--rung-font, 1.35rem);
+    font-weight:600;
+    letter-spacing: 0.05em;
+    background: var(--rung);
+    color: #1B2A41;
+    height: var(--rung-height, 50px);
+    line-height: var(--rung-height, 50px);
+    padding: 0 18px;
+    border-radius: 10px;
+    text-align:center;
+    text-transform: uppercase;
+    box-sizing: border-box;
+  }
+  .rung.empty{
+    background: var(--rung-empty);
+    color: var(--ink-dim);
+    border: 1.5px dashed rgba(245,239,224,0.25);
+  }
+  .rung.anchor{ background: var(--amber); }
+  .rung.clickable{ cursor: pointer; transition: filter 0.1s ease, transform 0.1s ease; }
+  .rung.clickable:hover{ filter: brightness(1.08); }
+  .rung.clickable:active{ transform: scale(0.97); }
+  input.rung-input{
+    border: none;
+    outline: none;
+    box-shadow: 0 0 0 2px var(--amber);
+    box-sizing: border-box;
+    min-width: 0;
+    transform: scaleX(1.06);
+  }
+
+  /* Ladders get taller the more rungs a puzzle has, so these tiers shrink
+     things down automatically to keep long puzzles more compact - short
+     puzzles stay at full comfortable size. Combined with the scrollable
+     ladder area above, a puzzle that still doesn't fully fit (rare - only
+     the longest puzzles on the smallest screens) simply scrolls within its
+     own little area instead of taking over the whole page. */
+  .panel.rungs-md{ --rung-font: 1.15rem; --rung-height: 44px; --rung-minw: 115px; --rung-gap: 6px; }
+  .panel.rungs-lg{ --rung-font: 1rem; --rung-height: 39px; --rung-minw: 100px; --rung-gap: 5px; }
+  .panel.rungs-xl{ --rung-font: 0.9rem; --rung-height: 35px; --rung-minw: 88px; --rung-gap: 4px; }
+
+
+  button{
+    font-family:'Inter',sans-serif; font-weight:600; font-size:0.95rem;
+    border:none; border-radius:10px; cursor:pointer; padding: 12px 18px;
+    transition: transform 0.1s ease, filter 0.1s ease;
+  }
+  button:hover{ filter: brightness(1.08); }
+  button:active{ transform: scale(0.97); }
+  .btn-primary{ background: var(--amber); color:#1B2A41; }
+  .btn-ghost{ background: rgba(245,239,224,0.08); color: var(--ink); }
+  #hint-btn{ display:inline-flex; align-items:center; justify-content:center; padding: 10px 14px; }
+
+  .feedback{ margin-top:12px; text-align:center; font-weight:600; min-height: 24px; flex-shrink:0; }
+  .feedback.win, .feedback.ok{ text-align:center; }
+  .error-list{ list-style:none; margin: 12px 0 0; padding:0; text-align:left; display:inline-block; }
+  .error-list li{ position:relative; padding-left:18px; margin-bottom:6px; font-weight:600; color: var(--red); font-size:0.9rem; }
+  .error-list li::before{ content:"●"; color: var(--red); position:absolute; left:0; font-size:0.6rem; top:5px; }
+  .error-list-wrap{ display:flex; justify-content:center; }
+  .feedback.win{ color: var(--green); }
+  .feedback.error{ color: var(--red); }
+  .feedback.ok{ color: var(--ink-dim); font-weight:500; }
+  .details{ margin-top:4px; text-align:center; font-size:0.8rem; color: var(--red); font-style:italic; }
+
+  .letter-bank{
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .bank-tiles{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    max-width: 100%;
+  }
+  .bank-tile{
+    width: 48px; height: 48px;
+    border: none; border-radius: 10px;
+    background: var(--rung);
+    color: #1B2A41;
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.15s ease;
+  }
+  .bank-tile.from-below{ background: var(--amber); }
+  .bank-tile:active{ transform: scale(0.9); }
+  .bank-tile.used{
+    background: rgba(245,239,224,0.08);
+    color: var(--ink-dim);
+    opacity: 0.4;
+    cursor: default;
+  }
+  .bank-controls{
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+    margin-top: 16px;
+  }
+  .bank-ctrl-btn{
+    width: 40px; height: 40px;
+    border: none; border-radius: 10px;
+    background: rgba(245,239,224,0.08);
+    color: var(--ink);
+    font-size: 1.35rem;
+    display: flex; align-items:center; justify-content:center;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+  }
+  .bank-ctrl-btn:active{ transform: scale(0.92); }
+  .bank-ctrl-btn.kb-on{ background: var(--amber); color: #1B2A41; }
+  .bank-ctrl-btn.bank-submit-btn{ background: var(--amber); color: #1B2A41; }
+  .bank-ctrl-btn.bank-group-spacer{ margin-left: 14px; }
+
+  .actions-row{ display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:10px; flex-shrink:0; }
+  .hint-display{
+    text-align:center; margin-top:10px; font-size:0.85rem; color: var(--ink-dim);
+    font-style:italic; flex-shrink:0; min-height: 0;
+  }
+  .hint-display .hint-letters{ color: var(--amber); font-style:normal; font-weight:600; letter-spacing:0.04em; }
+  .share-status{ text-align:center; margin-top:8px; font-size:0.8rem; color: var(--blue); font-weight:600; flex-shrink:0; }
+
+  .empty-state{ text-align:center; color: var(--ink-dim); padding: 30px 0; }
+
+  .confirm-overlay{
+    position: fixed; inset: 0; background: rgba(10,16,26,0.6);
+    display: flex; align-items:center; justify-content:center;
+    z-index: 1000; padding: 20px;
+  }
+  .confirm-card{
+    background: var(--bg-panel); border-radius: 16px; padding: 24px 22px;
+    max-width: 340px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .confirm-message{ font-size: 1rem; margin-bottom: 20px; text-align:center; }
+  .confirm-actions{ display:flex; gap:10px; justify-content:center; }
+  .confirm-actions button{ flex:1; }
+
+  .howto-overlay{
+    position: fixed; inset: 0; background: rgba(10,16,26,0.6);
+    display: flex; align-items:center; justify-content:center;
+    z-index: 1000; padding: 20px;
+  }
+  .howto-card{
+    position: relative;
+    background: var(--bg-panel); border-radius: 18px; padding: 26px 24px;
+    max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .howto-card h2{ font-family:'Fraunces',serif; margin-top:0; }
+  .howto-card ul{ line-height:1.7; }
+  .howto-close{
+    position: absolute; top: 14px; right: 14px;
+    width: 32px; height: 32px; border-radius: 50%; border: none;
+    background: rgba(245,239,224,0.1); color: var(--ink);
+    font-size: 1.1rem; line-height: 1; cursor: pointer;
+    display: flex; align-items:center; justify-content:center;
+  }
+  .howto-close:hover{ background: rgba(245,239,224,0.2); }
+  .howto-example-word{
+    font-family:'Fraunces',serif; background: var(--rung); color:#1B2A41;
+    padding: 2px 8px; border-radius:6px; font-weight:600; text-transform: uppercase;
+    display: inline-block; margin: 3px 0; line-height: 1.4;
+  }
+
+  footer{ text-align:center; margin-top: 8px; color: var(--ink-dim); font-size: 0.7rem; flex-shrink:0; }
+
+  @media (max-width: 420px){
+    .rung{ min-width: calc(var(--rung-minw, 140px) * 0.8); }
+    .brand{ font-size: 1.7rem; }
+  }
+
+  .confetti-piece{
+    position: fixed;
+    top: -12px;
+    width: 8px;
+    height: 14px;
+    opacity: 0.95;
+    pointer-events: none;
+    z-index: 999;
+    animation: confetti-fall linear forwards;
+  }
+  @keyframes confetti-fall{
+    to{ transform: translateY(110vh) rotate(360deg); opacity: 0.4; }
+  }
+
+  .summit-banner{
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg-panel);
+    color: var(--amber);
+    padding: 22px 28px;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    text-align: center;
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    z-index: 1000;
+    max-width: 320px;
+    animation: summit-pop 0.3s ease;
+  }
+  @keyframes summit-pop{
+    from{ transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
+    to{ transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 class="brand">Letter Ladder</h1>
+    <div class="top-links">
+      <a href="about.html">How to play</a>
+      <a href="solutions.html" id="solution-link">Yesterday's solutions</a>
+      <a href="stats.html">Your stats</a>
+      <a href="past-puzzles.html">Past Puzzles</a>
+      <a href="contact.html">Contact</a>
+      <a href="https://www.instagram.com/letterladder" target="_blank" rel="noopener" class="logo-link" aria-label="Follow Letter Ladder on Instagram">
+        <svg width="22" height="22" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="igGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#FFD600"/>
+              <stop offset="30%" stop-color="#FF7A00"/>
+              <stop offset="55%" stop-color="#E1306C"/>
+              <stop offset="80%" stop-color="#C13584"/>
+              <stop offset="100%" stop-color="#5B51D8"/>
+            </linearGradient>
+          </defs>
+          <rect x="4" y="4" width="120" height="120" rx="32" fill="url(#igGradient)"/>
+          <rect x="30" y="30" width="68" height="68" rx="20" fill="none" stroke="#FFFFFF" stroke-width="8"/>
+          <circle cx="64" cy="64" r="18" fill="none" stroke="#FFFFFF" stroke-width="8"/>
+          <circle cx="93" cy="35" r="6" fill="#FFFFFF"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <div class="date-row" id="date-row"></div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab" data-tier="easy">Easy</div>
+    <div class="tab" data-tier="medium">Medium</div>
+    <div class="tab" data-tier="hard">Hard</div>
+  </div>
+
+  <div class="panel" id="panel">
+    <!-- filled by JS -->
+  </div>
+</div>
+
+<!-- Bump the ?v= number below any time you update puzzles.js or the game logic,
+     so returning visitors' browsers are guaranteed to fetch the new version
+     instead of a cached copy. -->
+<script src="data/words.js?v=2"></script>
+<script src="data/puzzles.js?v=1787151516"></script>
+<script src="data/hints.js?v=1787151516"></script>
+<script>
+// ---------- date helpers ----------
+function todayKey(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function prettyDate(key){
+  const [y,m,d] = key.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return dt.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+}
+function resolveDateKey(){
+  // Supports "Past Puzzles" archive play via ?archive=YYYY-MM-DD. Only
+  // ever accepts a date that's both a real scheduled puzzle AND strictly
+  // before today - never today's own date (that's just the real game) and
+  // never a future date (which would leak an upcoming puzzle early).
+  const params = new URLSearchParams(window.location.search);
+  const requested = params.get('archive');
+  const today = todayKey();
+  if(requested && /^\d{4}-\d{2}-\d{2}$/.test(requested) && requested < today
+     && PUZZLE_SCHEDULE && PUZZLE_SCHEDULE[requested]){
+    return { key: requested, isArchive: true };
+  }
+  return { key: today, isArchive: false };
+}
+
+// ---------- game logic (ported from the original Flask app.py) ----------
+function counter(str){
+  const c = {};
+  for(const ch of str) c[ch] = (c[ch]||0)+1;
+  return c;
+}
+function timesText(n){
+  if(n === 1) return 'once';
+  if(n === 2) return 'twice';
+  return `${n} times`;
+}
+// Tapping a button while a box is focused would otherwise blur that
+// input first, which triggers commit() and can close/reset the box
+// before this button's own action gets a chance to run. The fix is to
+// run the action directly inside touchend (with preventDefault to stop
+// the blur), not in a separate click listener - preventDefault on a
+// touch event can silently suppress the click that would otherwise
+// follow it, which is what broke this whole class of button on mobile.
+function bindTapAction(el, action){
+  let firedViaTouch = false;
+  el.addEventListener('touchend', (e)=>{
+    e.preventDefault();
+    firedViaTouch = true;
+    action();
+  });
+  el.addEventListener('mousedown', (e)=> e.preventDefault());
+  el.addEventListener('click', ()=>{
+    if(firedViaTouch){ firedViaTouch = false; return; }
+    action();
+  });
+}
+
+function showConfirmModal(message, onConfirm){
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.innerHTML = `
+    <div class="confirm-card">
+      <div class="confirm-message">${message}</div>
+      <div class="confirm-actions">
+        <button type="button" class="btn-ghost confirm-cancel">Cancel</button>
+        <button type="button" class="btn-primary confirm-ok">Confirm</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  function close(){ overlay.remove(); }
+  bindTapAction(overlay.querySelector('.confirm-cancel'), close);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+  bindTapAction(overlay.querySelector('.confirm-ok'), ()=>{
+    close();
+    onConfirm();
+  });
+}
+
+const HOWTO_SEEN_KEY = 'letterladder:howToPlaySeen';
+function showHowToPlayPopupIfNeeded(){
+  if(localStorage.getItem(HOWTO_SEEN_KEY)) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'howto-overlay';
+  overlay.innerHTML = `
+    <div class="howto-card">
+      <button type="button" class="howto-close" aria-label="Close">&times;</button>
+      <h2>How to Play</h2>
+      <p>Build a ladder by filling in the missing rungs. Each rung adds exactly <strong>one letter</strong> to the word below it — you can rearrange the letters however you like, as long as every letter carries up plus the new one.</p>
+      <ul>
+        <li>Words can be guessed in any order</li>
+        <li><span class="howto-example-word">not</span> could climb to <span class="howto-example-word">tone</span>, <span class="howto-example-word">note</span>, or <span class="howto-example-word">torn</span></li>
+        <li>A letter can repeat — <span class="howto-example-word">lead</span> can become <span class="howto-example-word">ladle</span> by adding a second "L"</li>
+        <li>Every word in the ladder must be a real English word</li>
+      </ul>
+      <p>There's usually more than one path to the top — how many can you find?</p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  function close(){
+    localStorage.setItem(HOWTO_SEEN_KEY, '1');
+    overlay.remove();
+  }
+  bindTapAction(overlay.querySelector('.howto-close'), close);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+}
+
+function joinAnd(items){
+  if(items.length === 1) return items[0];
+  if(items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0,-1).join(', ')}, and ${items[items.length-1]}`;
+}
+function lettersPhrase(letters){
+  return letters.length === 1 ? `the letter ${letters[0]}` : `the letters ${joinAnd(letters)}`;
+}
+function getHintLetterOrder(word){
+  // The hint just needs to show which letters are used, not imply any
+  // particular order matters - so if the plain alphabetical arrangement
+  // happens to spell out a real word (possibly even the answer itself),
+  // shuffle instead rather than accidentally giving away more than
+  // intended.
+  const lower = word.toLowerCase();
+  const sorted = lower.split('');
+  sorted.sort();
+  if(!WORD_SET.has(sorted.join(''))){
+    return sorted;
+  }
+  let attempt = sorted.slice();
+  for(let i = 0; i < 20; i++){
+    for(let j = attempt.length - 1; j > 0; j--){
+      const k = Math.floor(Math.random() * (j + 1));
+      [attempt[j], attempt[k]] = [attempt[k], attempt[j]];
+    }
+    if(!WORD_SET.has(attempt.join(''))) return attempt;
+  }
+  // Vanishingly unlikely to ever be reached, but don't loop forever.
+  return attempt;
+}
+function checkGuessLetters(guess, startingWord, finalWord){
+  const problems = [];
+
+  const guessCounter = counter(guess);
+  const startingCounter = counter(startingWord);
+  const missingStarting = [];
+  for(const ch of Object.keys(startingCounter)){
+    const have = guessCounter[ch] || 0;
+    if(have < startingCounter[ch]) missingStarting.push(ch);
+  }
+  if(missingStarting.length > 0){
+    problems.push({ reason:'missing_starting_letters', letters: missingStarting });
+  }
+
+  const finalCounter = counter(finalWord);
+  const notInFinal = [];
+  const tooMany = [];
+  for(const ch of Object.keys(guessCounter)){
+    const gCount = guessCounter[ch];
+    const fCount = finalCounter[ch] || 0;
+    if(fCount === 0){
+      notInFinal.push(ch);
+    } else if(gCount > fCount){
+      tooMany.push({ ch, fCount });
+    }
+  }
+  if(notInFinal.length > 0){
+    problems.push({ reason:'letter_not_in_final', letters: notInFinal });
+  }
+  if(tooMany.length > 0){
+    problems.push({ reason:'too_many_repeats', details: tooMany });
+  }
+  return problems;
+}
+function isStepValid(word1, word2){
+  if(word2.length !== word1.length + 1){
+    return { valid:false, reason:'wrong_length' };
+  }
+  const counts1 = counter(word1);
+  const counts2 = counter(word2);
+  const missing = [];
+  for(const ch of Object.keys(counts1)){
+    const have = counts2[ch] || 0;
+    if(have < counts1[ch]) missing.push(ch);
+  }
+  if(missing.length > 0){
+    return { valid:false, reason:'missing_letters', letters: missing };
+  }
+  return { valid:true };
+}
+function isValidChain(startingWord, guessesObj, finalWord){
+  const lengths = Object.keys(guessesObj).map(Number).sort((a,b)=>a-b);
+  const allWords = [startingWord, ...lengths.map(l => guessesObj[l]), finalWord];
+  const invalidSteps = [];
+  for(let i=0;i<allWords.length-1;i++){
+    const result = isStepValid(allWords[i], allWords[i+1]);
+    if(!result.valid){
+      invalidSteps.push({ from: allWords[i], to: allWords[i+1], ...result });
+    }
+  }
+  return { valid: invalidSteps.length === 0, invalidSteps };
+}
+
+// ---------- state ----------
+const TIERS = ['easy','medium','hard'];
+// Must match START_DATE in scripts/generate_schedule.py, so the puzzle
+// "day number" shown in shared results matches what the schedule actually
+// uses. Update both together if you ever change the launch date.
+const LAUNCH_DATE_KEY = '2026-07-27';
+const SITE_URL = 'https://jmaser54.github.io/letter-ladder/';
+let activeTier = (function(){
+  const saved = localStorage.getItem('letterladder:activeTier');
+  return TIERS.includes(saved) ? saved : 'easy';
+})();
+let activeLength = null; // which rung (by word length) is currently being typed into
+let lastEnterCommitAt = 0; // guards against iOS sometimes firing two separate
+                            // "Enter was pressed" signals for one keypress
+let lastFeedback = {}; // per-tier: the last shown error, so it survives a
+                        // re-render triggered by opening a different box
+                        // (e.g. the keyboard appearing) instead of vanishing
+let bankState = {}; // per tier: { word, order } - the source word the bank's
+                     // tiles are drawn from, and their current shuffle order
+const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+let keyboardEnabled = isTouchDevice ? (localStorage.getItem('letterladder:keyboardEnabled') === 'true') : true; // bank-first on mobile, always-on on desktop
+const { key: dateKey, isArchive: isArchiveMode } = resolveDateKey();
+
+function storageKey(tier){ return `letterladder:${dateKey}:${tier}`; }
+function loadGuesses(tier){
+  try{
+    const raw = localStorage.getItem(storageKey(tier));
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveGuesses(tier, obj){
+  try{ localStorage.setItem(storageKey(tier), JSON.stringify(obj)); }catch(e){}
+}
+function clearGuesses(tier){
+  try{ localStorage.removeItem(storageKey(tier)); }catch(e){}
+}
+
+// ---------- stats, streaks & score (all local to this device/browser -
+// there are no accounts, so none of this follows you to another device) ----------
+const STATS_KEY = 'letterladder:stats';
+const HINT_PENALTY_PER_USE = 5; // tweak this to make hints cost more/less
+
+function blankStat(){
+  return { played:0, solved:0, currentStreak:0, maxStreak:0, lastSolvedDate:null, score:0 };
+}
+function loadStats(){
+  try{
+    const raw = localStorage.getItem(STATS_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      // guard against a corrupted/partial object from an older version
+      for(const key of ['easy','medium','hard','total']){
+        parsed[key] = Object.assign(blankStat(), parsed[key] || {});
+      }
+      return parsed;
+    }
+  }catch(e){}
+  return { easy: blankStat(), medium: blankStat(), hard: blankStat(), total: blankStat() };
+}
+function saveStats(stats){
+  try{ localStorage.setItem(STATS_KEY, JSON.stringify(stats)); }catch(e){}
+}
+function dateKeyMinusOneDay(key){
+  const [y,m,d] = key.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  dt.setDate(dt.getDate()-1);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+function bumpStreak(stat, todayKeyStr){
+  if(stat.lastSolvedDate === todayKeyStr) return; // already counted today, don't double-bump
+  const wasYesterday = stat.lastSolvedDate === dateKeyMinusOneDay(todayKeyStr);
+  stat.currentStreak = wasYesterday ? stat.currentStreak + 1 : 1;
+  stat.maxStreak = Math.max(stat.maxStreak, stat.currentStreak);
+  stat.lastSolvedDate = todayKeyStr;
+}
+
+function markPlayedIfNeeded(tier){
+  if(isArchiveMode) return; // archive plays never count toward stats or analytics
+  const flagKey = `letterladder:${dateKey}:${tier}:playedCounted`;
+  if(localStorage.getItem(flagKey)) return;
+  localStorage.setItem(flagKey, '1');
+  const stats = loadStats();
+  stats[tier].played += 1;
+  stats.total.played += 1;
+  saveStats(stats);
+}
+
+function recordHintUsed(tier){
+  const key = `letterladder:${dateKey}:${tier}:hintsUsed`;
+  const current = parseInt(localStorage.getItem(key) || '0', 10);
+  localStorage.setItem(key, String(current + 1));
+}
+function getHintsUsed(tier){
+  return parseInt(localStorage.getItem(`letterladder:${dateKey}:${tier}:hintsUsed`) || '0', 10);
+}
+
+function getHintInfo(tier, L){
+  try{
+    const raw = localStorage.getItem(`letterladder:${dateKey}:${tier}:hintInfo:${L}`);
+    return raw ? JSON.parse(raw) : { count: 0, letters: null, firstLetter: null };
+  }catch(e){
+    return { count: 0, letters: null, firstLetter: null };
+  }
+}
+function saveHintInfo(tier, L, info){
+  localStorage.setItem(`letterladder:${dateKey}:${tier}:hintInfo:${L}`, JSON.stringify(info));
+}
+
+function getLastHintedLength(tier){
+  const raw = localStorage.getItem(`letterladder:${dateKey}:${tier}:lastHintedLength`);
+  return raw !== null ? Number(raw) : null;
+}
+function setLastHintedLength(tier, L){
+  const key = `letterladder:${dateKey}:${tier}:lastHintedLength`;
+  if(L === null){
+    localStorage.removeItem(key);
+  } else {
+    localStorage.setItem(key, String(L));
+  }
+}
+
+function buildHintDisplayHtml(tier, L){
+  const info = getHintInfo(tier, L);
+  const parts = [];
+  if(info.letters){
+    parts.push(`${L}-letter word uses: <span class="hint-letters">${info.letters}</span>`);
+  }
+  if(info.firstLetter){
+    parts.push(`First letter: <span class="hint-letters">${info.firstLetter}</span>`);
+  }
+  return parts.join('<br>');
+}
+
+function markStartedIfNeeded(tier){
+  if(isArchiveMode) return; // archive plays never count toward stats or analytics
+  const flagKey = `letterladder:${dateKey}:${tier}:startedCounted`;
+  if(localStorage.getItem(flagKey)) return;
+  localStorage.setItem(flagKey, '1');
+
+  if(typeof gtag === 'function'){
+    gtag('event', 'puzzle_started', {
+      tier: tier,
+      puzzle_date: dateKey,
+    });
+  }
+}
+
+function markSolvedIfNeeded(tier, guesses){
+  if(isArchiveMode) return; // archive plays never count toward stats or analytics
+  const flagKey = `letterladder:${dateKey}:${tier}:solvedCounted`;
+  if(localStorage.getItem(flagKey)) return;
+  localStorage.setItem(flagKey, '1');
+
+  // Track puzzle completions in GA4. Guarded since ad blockers commonly
+  // block analytics scripts entirely - that should never be able to
+  // break the actual game if gtag isn't available for any reason.
+  if(typeof gtag === 'function'){
+    gtag('event', 'puzzle_completed', {
+      tier: tier,
+      hints_used: getHintsUsed(tier),
+      puzzle_date: dateKey,
+    });
+
+    // Track which specific word was used at each rung length, using the
+    // final settled answer at the moment of completion rather than every
+    // intermediate attempt - this fires exactly once per rung per player
+    // (guarded by the same one-time flag as puzzle_completed above), so
+    // changing an answer back and forth (e.g. table -> bleat -> table)
+    // only ever counts as a single "table" for that position.
+    for(const len of Object.keys(guesses)){
+      gtag('event', 'word_used', {
+        tier: tier,
+        puzzle_date: dateKey,
+        rung_length: Number(len),
+        word: guesses[len],
+      });
+    }
+  }
+
+  const stats = loadStats();
+  const stat = stats[tier];
+  stat.solved += 1;
+  stats.total.solved += 1;
+  bumpStreak(stat, dateKey);
+
+  // Score: reward the length of every word the person actually had to
+  // guess (the start/final words are given to you, so they don't count),
+  // minus a small penalty for each hint used on this specific puzzle.
+  const guessedWords = Object.values(guesses);
+  const basePoints = guessedWords.reduce((sum, w) => sum + w.length, 0);
+  const penalty = getHintsUsed(tier) * HINT_PENALTY_PER_USE;
+  stat.score += Math.max(0, basePoints - penalty);
+  stats.total.score = stats.easy.score + stats.medium.score + stats.hard.score;
+
+  // If this solve completes all three tiers for today, the "total" streak
+  // (a separate concept from the per-tier ones - it tracks consecutive
+  // days you completed EVERY puzzle, tying into the summit celebration)
+  // gets its own bump.
+  if(TIERS.every(isTierComplete)){
+    bumpStreak(stats.total, dateKey);
+  }
+
+  saveStats(stats);
+}
+
+// ---------- rendering ----------
+const panel = document.getElementById('panel');
+function weekendLabelSuffix(key){
+  const [y, m, d] = key.split('-').map(Number);
+  const dayOfWeek = new Date(y, m - 1, d).getDay(); // 0 = Sunday, 6 = Saturday
+  if(dayOfWeek === 6) return ' - Spicy Saturday';
+  if(dayOfWeek === 0) return ' - Summit Sunday';
+  return '';
+}
+document.getElementById('date-row').textContent = prettyDate(dateKey) + weekendLabelSuffix(dateKey);
+if(isArchiveMode){
+  const solutionLink = document.getElementById('solution-link');
+  solutionLink.textContent = 'View solutions';
+  solutionLink.href = `solutions.html?date=${dateKey}`;
+}
+
+function getTodaysPuzzle(tier){
+  const day = PUZZLE_SCHEDULE[dateKey];
+  if(!day) return null;
+  return day[tier] || null;
+}
+
+function computeInitialUsedIndices(order, typedValue){
+  // Best-effort reconstruction for a slot that already has a value when
+  // opened (we don't know which specific tiles were originally tapped,
+  // so this just claims the first N matching instances of each letter).
+  const neededCounts = {};
+  for(const ch of typedValue.toUpperCase()){
+    neededCounts[ch] = (neededCounts[ch] || 0) + 1;
+  }
+  const consumedSoFar = {};
+  const indices = [];
+  order.forEach((letter, i) => {
+    const upper = letter.toUpperCase();
+    consumedSoFar[upper] = consumedSoFar[upper] || 0;
+    if(neededCounts[upper] && consumedSoFar[upper] < neededCounts[upper]){
+      indices.push(i);
+      consumedSoFar[upper]++;
+    }
+  });
+  return indices;
+}
+
+function getBankWord(finalWord, guesses, steps, activeLength){
+  // The bank shows whichever already-filled slot is the nearest one above
+  // the active length - since every valid lower word's letters must be a
+  // subset of every valid higher word's letters, that's always a valid
+  // reference for building the current slot. Falls back to the final word
+  // (the given, longest reference) if nothing above the active slot is
+  // filled in yet.
+  const above = steps.filter(L => L > activeLength && guesses[L]).sort((a,b)=>a-b);
+  if(above.length > 0) return guesses[above[0]];
+  return finalWord;
+}
+
+function getBelowWord(startingWord, guesses, steps, activeLength){
+  // Mirror of getBankWord, looking downward instead of up: the letters in
+  // whichever filled slot is the nearest one below the active length are
+  // guaranteed to all reappear in the current guess too, so highlighting
+  // them helps show what's already "locked in" versus what's genuinely
+  // new territory. Falls back to the puzzle's given starting word if
+  // nothing below the active slot has been filled in yet.
+  const below = steps.filter(L => L < activeLength && guesses[L]).sort((a,b)=>b-a);
+  if(below.length > 0) return guesses[below[0]];
+  return startingWord;
+}
+
+function computeBelowMatchIndices(order, belowWord){
+  // Greedily matches bank tiles (in whatever order they're currently
+  // shown, shuffled or not) against the letter counts in belowWord, so
+  // exactly the right number of tiles per letter get marked - e.g. if
+  // belowWord has one "e" but the bank has two "e" tiles, only one of
+  // them is marked as "from below," never both or neither.
+  const remaining = {};
+  for(const ch of belowWord){ remaining[ch] = (remaining[ch] || 0) + 1; }
+  const matched = new Set();
+  order.forEach((letter, i) => {
+    if(remaining[letter] > 0){
+      matched.add(i);
+      remaining[letter]--;
+    }
+  });
+  return matched;
+}
+
+function isTierComplete(tier){
+  const puzzle = getTodaysPuzzle(tier);
+  if(!puzzle) return true; // no puzzle scheduled for this tier today - don't block the celebration on it
+  const steps = [];
+  for(let L = puzzle.start.length+1; L < puzzle.final.length; L++) steps.push(L);
+  const guesses = loadGuesses(tier);
+  if(!steps.every(L => guesses[L])) return false;
+  const { valid } = isValidChain(puzzle.start, guesses, puzzle.final);
+  return valid;
+}
+
+function puzzleDayNumber(){
+  const [ly, lm, ld] = LAUNCH_DATE_KEY.split('-').map(Number);
+  const launch = new Date(ly, lm-1, ld);
+  const [ty, tm, td] = dateKey.split('-').map(Number);
+  const today = new Date(ty, tm-1, td);
+  const diffDays = Math.round((today - launch) / 86400000);
+  return diffDays + 1;
+}
+
+function buildShareText(){
+  const tierLabels = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+  const lines = [];
+  for(const tier of TIERS){
+    const puzzle = getTodaysPuzzle(tier);
+    if(!puzzle) continue; // nothing scheduled for this tier today, skip it
+    if(isTierComplete(tier)){
+      const hints = getHintsUsed(tier);
+      lines.push(hints > 0
+        ? `${tierLabels[tier]}: ${'💡'.repeat(hints)}`
+        : `${tierLabels[tier]}: ✔️`);
+    } else {
+      lines.push(`${tierLabels[tier]}: —`);
+    }
+  }
+  return `Letter Ladder #${puzzleDayNumber()} 🪜\n\n${lines.join('\n')}\n\n${SITE_URL}`;
+}
+
+async function buildShareImage(){
+  // Builds a results-card PNG matching the game's own visual style, for
+  // sharing to platforms like Instagram Stories that handle images far
+  // better than plain text through the native share sheet.
+  const tierLabels = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+  const rows = [];
+  for(const tier of TIERS){
+    const puzzle = getTodaysPuzzle(tier);
+    if(!puzzle) continue;
+    if(isTierComplete(tier)){
+      const hints = getHintsUsed(tier);
+      rows.push({ label: tierLabels[tier], status: hints > 0 ? '💡'.repeat(hints) : '✔', solved: true });
+    } else {
+      rows.push({ label: tierLabels[tier], status: '—', solved: false });
+    }
+  }
+
+  const W = 1080, H = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // Background gradient matching the game's own body background
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#24384F');
+  grad.addColorStop(0.55, '#1B2A41');
+  grad.addColorStop(1, '#142132');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = 'center';
+
+  // Title
+  ctx.fillStyle = '#F5EFE0';
+  ctx.font = "700 68px Georgia, serif";
+  ctx.fillText(`Letter Ladder #${puzzleDayNumber()} 🪜`, W/2, 170);
+
+  ctx.fillStyle = '#9FB3C8';
+  ctx.font = "400 38px Arial, sans-serif";
+  ctx.fillText("Can you climb it?", W/2, 232);
+
+  // Per-tier result rows, styled as bold, high-contrast cards - solid
+  // amber fill for solved tiers (not a faint tint), a clearly visible
+  // outlined box for unsolved ones, so this still reads clearly even at
+  // the small thumbnail size most share sheets and chat apps show it at.
+  let y = 330;
+  const cardW = 820, cardH = 140, cardX = (W - cardW) / 2, cardGap = 26;
+  for(const row of rows){
+    ctx.beginPath();
+    ctx.roundRect(cardX, y, cardW, cardH, 24);
+    if(row.solved){
+      ctx.fillStyle = '#E8A33D';
+      ctx.fill();
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    const textColor = row.solved ? '#1B2A41' : '#F5EFE0';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = textColor;
+    ctx.font = "700 52px Arial, sans-serif";
+    ctx.fillText(row.label, cardX + 40, y + 90);
+
+    ctx.textAlign = 'right';
+    ctx.font = "700 52px Arial, sans-serif";
+    ctx.fillStyle = row.solved ? textColor : '#9FB3C8';
+    ctx.fillText(row.status, cardX + cardW - 40, y + 90);
+
+    y += cardH + cardGap;
+  }
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#9FB3C8';
+  ctx.font = "400 34px Arial, sans-serif";
+  ctx.fillText(SITE_URL.replace('https://', ''), W/2, y + 30);
+
+  return new Promise(resolve => {
+    canvas.toBlob(blob => resolve(blob), 'image/png');
+  });
+}
+
+function triggerSummitCelebration(){
+  const colors = ['#E8A33D', '#6FBF8B', '#F5EFE0', '#D9705F'];
+  for(let i=0; i<70; i++){
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = (Math.random()*100) + 'vw';
+    piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+    piece.style.animationDuration = (2.2 + Math.random()*1.6) + 's';
+    piece.style.animationDelay = (Math.random()*0.4) + 's';
+    document.body.appendChild(piece);
+    setTimeout(()=> piece.remove(), 4200);
+  }
+  const banner = document.createElement('div');
+  banner.className = 'summit-banner';
+  banner.textContent = "Well done! You've reached the summit of today's letter ladder!";
+  document.body.appendChild(banner);
+  setTimeout(()=> banner.remove(), 4000);
+}
+
+function checkAndCelebrateIfAllComplete(){
+  if(!TIERS.every(isTierComplete)) return;
+  const flagKey = `letterladder:${dateKey}:summitShown`;
+  if(localStorage.getItem(flagKey)) return;
+  localStorage.setItem(flagKey, '1');
+  triggerSummitCelebration();
+}
+
+function render(focusInput = false, pendingErrors = null){
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.classList.toggle('active', t.dataset.tier === activeTier);
+  });
+
+  // Capture whatever is currently typed (but not yet submitted) in the
+  // active input before the panel gets rebuilt below - otherwise actions
+  // like shuffle, which re-render without changing what's being typed,
+  // would wipe out in-progress typing since a fresh input element only
+  // ever starts from the last *committed* guess.
+  let preservedLiveValue = null;
+  if(activeLength != null){
+    const existingInput = document.getElementById(`rung-input-${activeLength}`);
+    if(existingInput) preservedLiveValue = existingInput.value;
+  }
+
+  const puzzle = getTodaysPuzzle(activeTier);
+  if(!puzzle){
+    panel.className = 'panel';
+    panel.innerHTML = `<div class="empty-state">No ${activeTier} puzzle scheduled for today yet — check back soon!</div>`;
+    return;
+  }
+
+  const startingWord = puzzle.start;
+  const finalWord = puzzle.final;
+  const steps = [];
+  for(let L = startingWord.length+1; L < finalWord.length; L++) steps.push(L);
+
+  const guesses = loadGuesses(activeTier);
+  const allFilled = steps.every(L => guesses[L]);
+  let feedback = '';
+  let feedbackClass = '';
+  let details = [];
+
+  if(allFilled){
+    // Guarantee "played" is always counted before "solved" ever can be -
+    // this covers puzzles that were already fully filled in from before
+    // stats tracking existed, which would otherwise count as solved
+    // without ever having been marked as played.
+    markPlayedIfNeeded(activeTier);
+    const { valid, invalidSteps } = isValidChain(startingWord, guesses, finalWord);
+    if(valid){
+      feedback = "🎉 You win! Nicely climbed.";
+      feedbackClass = 'win';
+      markSolvedIfNeeded(activeTier, guesses);
+      checkAndCelebrateIfAllComplete();
+    } else {
+      feedback = "❌ Guesses aren't a valid progression.";
+      feedbackClass = 'error';
+      details = invalidSteps.map(s => {
+        if(s.reason === 'missing_letters'){
+          return `"${s.to.toUpperCase()}" is missing the "${s.letters.length === 1 ? s.letters[0].toUpperCase() : joinAnd(s.letters.map(l => l.toUpperCase()))}" from "${s.from.toUpperCase()}".`;
+        }
+        return `"${s.from.toUpperCase()}" → "${s.to.toUpperCase()}" isn't a valid one-letter step.`;
+      });
+    }
+  }
+
+  const isWon = feedbackClass === 'win';
+  // Editing after a win is allowed (clicking a rung + its delete-X reopens
+  // it), so activeLength is no longer force-reset just because isWon is
+  // true - only the actual guess-acceptance/delete logic controls it now.
+
+  if(activeLength === null && !isWon){
+    // Always have a target box selected (without auto-focusing/opening
+    // the keyboard) so the letter bank is ready to use immediately,
+    // instead of requiring an initial tap into a box first. Points to the
+    // highest unfilled box, not the lowest.
+    const lastIncomplete = [...steps].reverse().find(L => !guesses[L]);
+    if(lastIncomplete !== undefined) activeLength = lastIncomplete;
+  }
+
+  let feedbackHtml = feedback;
+  let feedbackClassFinal = feedbackClass;
+  if(pendingErrors){
+    feedbackHtml = `<div class="error-list-wrap"><ul class="error-list">${pendingErrors.map(e => `<li>${e}</li>`).join('')}</ul></div>`;
+    feedbackClassFinal = 'error';
+    lastFeedback[activeTier] = { html: feedbackHtml, className: feedbackClassFinal };
+  } else if(feedback !== ''){
+    // A fresh win or invalid-chain result naturally takes priority and
+    // supersedes any older single-guess error.
+    lastFeedback[activeTier] = null;
+  } else if(lastFeedback[activeTier]){
+    // Nothing new to show this render (e.g. we're just opening a
+    // different box to type the next guess) - keep showing whatever was
+    // last displayed instead of letting it silently vanish.
+    feedbackHtml = lastFeedback[activeTier].html;
+    feedbackClassFinal = lastFeedback[activeTier].className;
+  }
+
+  const maxWordLen = finalWord.length; // always the longest word in the puzzle
+
+  const totalRungs = steps.length + 2;
+  let sizeTier = '';
+  if(totalRungs >= 9) sizeTier = 'rungs-xl';
+  else if(totalRungs >= 7) sizeTier = 'rungs-lg';
+  else if(totalRungs >= 5) sizeTier = 'rungs-md';
+
+  // Same font-size/min-width numbers as the CSS tiers below, mirrored here
+  // in plain JS so the box width can be a flat pixel number - no calc()/
+  // var()/max() for the browser to resolve, which is what kept going wrong.
+  const TIER_CONFIG = {
+    '':         { fontPx: 21.6, minWidthPx: 165 },
+    'rungs-md': { fontPx: 18.4, minWidthPx: 115 },
+    'rungs-lg': { fontPx: 16,   minWidthPx: 100 },
+    'rungs-xl': { fontPx: 14.4, minWidthPx: 88  },
+  };
+  const tierCfg = TIER_CONFIG[sizeTier];
+  const letterSpacingPx = tierCfg.fontPx * 0.05; // matches the CSS letter-spacing
+  const computedWidthPx = Math.round(Math.max(
+    tierCfg.minWidthPx,
+    maxWordLen * tierCfg.fontPx * 0.6 + (maxWordLen - 1) * letterSpacingPx + tierCfg.fontPx * 3.4
+  ));
+
+  function rungBoxStyle(L){
+    // ONE flat pixel width for every rung in this puzzle (based on the
+    // longest word). A short word just naturally occupies less of the
+    // box, centered, while the longest word fills it edge to edge -
+    // that's what gives the pyramid effect, not stretched-out text.
+    return `width:${computedWidthPx}px; max-width:${computedWidthPx}px; min-width:0;`;
+  }
+
+  const rungsHtml = [];
+  rungsHtml.push(`<div class="rung-row"><div class="rung-count">${finalWord.length}</div><div class="rung anchor" style="${rungBoxStyle(finalWord.length)}">${finalWord}</div></div>`);
+  for(let i = steps.length-1; i>=0; i--){
+    const L = steps[i];
+    const g = guesses[L];
+    if(activeLength === L){
+      // Only show the delete option here if this specific box already had
+      // a guess in it when it was opened (i.e. you clicked in to replace
+      // or remove an existing entry) - not for a box you're filling in
+      // for the first time.
+      const deleteBtn = g ? `<button type="button" class="delete-guess-btn" data-length="${L}" aria-label="Delete this guess">×</button>` : '';
+      const inputValue = preservedLiveValue !== null ? preservedLiveValue : (g ? g : '');
+      rungsHtml.push(`<div class="rung-row"><div class="rung-count">${L}</div><input type="text" class="rung rung-input" id="rung-input-${L}" data-length="${L}" maxlength="${L}" size="${maxWordLen}" value="${inputValue}" style="${rungBoxStyle(L)}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" inputmode="${keyboardEnabled ? 'text' : 'none'}" ${keyboardEnabled ? '' : 'readonly'}>${deleteBtn}</div>`);
+    } else {
+      const clickableClass = 'clickable';
+      rungsHtml.push(`<div class="rung-row"><div class="rung-count">${L}</div><div class="rung ${g?'':'empty'} ${clickableClass}" data-length="${L}" style="${rungBoxStyle(L)}">${g ? g : '&nbsp;'.repeat(L)}</div></div>`);
+    }
+  }
+  rungsHtml.push(`<div class="rung-row"><div class="rung-count">${startingWord.length}</div><div class="rung anchor" style="${rungBoxStyle(startingWord.length)}">${startingWord}</div></div>`);
+
+  let bankHtml = '';
+  let extraControlsHtml = '';
+  let kbToggleHtml = '';
+  if(!isWon && activeLength != null){
+    let bankTilesHtml = '';
+    const showBankTiles = !keyboardEnabled || !isTouchDevice;
+    if(showBankTiles){
+      const bankWord = getBankWord(finalWord, guesses, steps, activeLength);
+      if(!bankState[activeTier] || bankState[activeTier].word !== bankWord || bankState[activeTier].forLength !== activeLength){
+        const order = bankWord.split('');
+        bankState[activeTier] = {
+          word: bankWord,
+          order,
+          forLength: activeLength,
+          usedIndices: computeInitialUsedIndices(order, guesses[activeLength] || ''),
+        };
+      }
+      const order = bankState[activeTier].order;
+      const usedSet = new Set(bankState[activeTier].usedIndices);
+      const belowWord = getBelowWord(startingWord, guesses, steps, activeLength);
+      const belowMatchSet = computeBelowMatchIndices(order, belowWord);
+      const tilesHtml = order.map((letter, i) =>
+        `<button type="button" class="bank-tile ${belowMatchSet.has(i) ? 'from-below' : ''} ${usedSet.has(i) ? 'used' : ''}" data-letter="${letter}" data-index="${i}" ${usedSet.has(i) ? 'disabled' : ''}>${letter.toUpperCase()}</button>`
+      ).join('');
+      bankTilesHtml = `<div class="bank-tiles" id="bank-tiles">${tilesHtml}</div>`;
+      const backspaceIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h11a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H9l-7-8 7-8z"></path><line x1="13" y1="9" x2="18" y2="15"></line><line x1="18" y1="9" x2="13" y2="15"></line></svg>`;
+      const submitIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>`;
+      extraControlsHtml = `
+        <button type="button" class="bank-ctrl-btn bank-group-spacer" id="bank-backspace-btn" aria-label="Delete last letter">${backspaceIcon}</button>
+        <button type="button" class="bank-ctrl-btn bank-submit-btn" id="bank-submit-btn" aria-label="Submit guess">${submitIcon}</button>
+      `;
+    }
+    // No keyboard-toggle at all on desktop - a physical keyboard is
+    // always available there, so there's nothing to toggle.
+    if(isTouchDevice){
+      const kbIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"></rect><line x1="6" y1="9.5" x2="6" y2="9.5"></line><line x1="9.5" y1="9.5" x2="9.5" y2="9.5"></line><line x1="13" y1="9.5" x2="13" y2="9.5"></line><line x1="16.5" y1="9.5" x2="16.5" y2="9.5"></line><line x1="19.5" y1="9.5" x2="19.5" y2="9.5"></line><line x1="6" y1="13" x2="6" y2="13"></line><line x1="9.5" y1="13" x2="9.5" y2="13"></line><line x1="13" y1="13" x2="13" y2="13"></line><line x1="16.5" y1="13" x2="16.5" y2="13"></line><line x1="19.5" y1="13" x2="19.5" y2="13"></line><line x1="8" y1="16" x2="16" y2="16"></line></svg>`;
+      kbToggleHtml = `<button type="button" class="bank-ctrl-btn bank-group-spacer ${keyboardEnabled ? 'kb-on' : ''}" id="keyboard-toggle-btn" aria-label="Toggle keyboard">${kbIcon}</button>`;
+    }
+    bankHtml = `
+      <div class="letter-bank" id="letter-bank">
+        ${bankTilesHtml}
+      </div>
+    `;
+  }
+
+  const trashIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+  const lightbulbIcon = `<svg width="22" height="22" viewBox="0 0 24 24"><path d="M9 21h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path><path d="M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path><path d="M12 3a6.5 6.5 0 0 0-4 11.6c.7.6 1.2 1.5 1.3 2.4h5.4c.1-.9.6-1.8 1.3-2.4A6.5 6.5 0 0 0 12 3z" fill="#F5C842" stroke="#F5C842" stroke-width="1.3" stroke-linejoin="round"></path></svg>`;
+  // Hint always targets the highest unfilled rung. Up to two hints are
+  // allowed per rung (first reveals the letter set, second reveals the
+  // first letter) - once both have been used for this specific target,
+  // there's no third hint to offer, so the button disappears until a
+  // different (not-yet-maxed) rung becomes the target.
+  const unfilledForHint = steps.filter(L => !guesses[L]);
+  const hintTargetLength = unfilledForHint.length > 0 ? Math.max(...unfilledForHint) : null;
+  const hintMaxedForTarget = hintTargetLength !== null && getHintInfo(activeTier, hintTargetLength).count >= 2;
+  const showHintBtn = !isWon && !hintMaxedForTarget;
+  const iconControlsHtml = `
+    <div class="bank-controls">
+      <button class="bank-ctrl-btn" id="clear-btn" type="button" aria-label="Clear guesses">${trashIcon}</button>
+      ${!isWon && activeLength != null ? `<button type="button" class="bank-ctrl-btn" id="shuffle-btn" aria-label="Shuffle letters">🔀</button>` : ''}
+      ${showHintBtn ? `<button class="bank-ctrl-btn" id="hint-btn" type="button" aria-label="Hint">${lightbulbIcon}</button>` : ''}
+      ${!isWon && activeLength != null ? kbToggleHtml : ''}
+      ${!isWon && activeLength != null ? extraControlsHtml : ''}
+    </div>
+  `;
+
+  const anyTierSolvedToday = TIERS.some(tier => getTodaysPuzzle(tier) && isTierComplete(tier));
+
+  panel.className = `panel ${sizeTier}`;
+  panel.innerHTML = `
+    <div class="ladder-scroll" id="ladder-scroll"><div class="ladder">${rungsHtml.join('')}</div></div>
+    <div class="feedback ${feedbackClassFinal}">${feedbackHtml}</div>
+    ${details.map(d=>`<div class="details">${d}</div>`).join('')}
+    ${bankHtml}
+    ${iconControlsHtml}
+    <div class="actions-row">
+      ${anyTierSolvedToday ? `<button class="btn-primary" id="share-btn" type="button">Share results</button>` : ''}
+    </div>
+    <div class="hint-display" id="hint-display"></div>
+    <div class="share-status" id="share-status"></div>
+  `;
+
+  const lastHintedLength = getLastHintedLength(activeTier);
+  if(lastHintedLength !== null){
+    const hd = document.getElementById('hint-display');
+    if(hd) hd.innerHTML = buildHintDisplayHtml(activeTier, lastHintedLength);
+  }
+
+  document.getElementById('clear-btn').addEventListener('click', ()=>{
+    showConfirmModal('Are you sure you want to clear your puzzle?', ()=>{
+      const ladderEl = panel.querySelector('.ladder');
+      if(ladderEl){
+        ladderEl.classList.add('fading-out');
+        setTimeout(()=>{
+          activeLength = null;
+          clearGuesses(activeTier);
+          lastFeedback[activeTier] = null;
+          setLastHintedLength(activeTier, null);
+          bankState[activeTier] = null;
+          render();
+        }, 960);
+      } else {
+        activeLength = null;
+        clearGuesses(activeTier);
+        lastFeedback[activeTier] = null;
+        setLastHintedLength(activeTier, null);
+        bankState[activeTier] = null;
+        render();
+      }
+    });
+  });
+
+  const shareBtn = document.getElementById('share-btn');
+  if(shareBtn){
+    shareBtn.addEventListener('click', async ()=>{
+      const shareText = buildShareText();
+      const statusEl = document.getElementById('share-status');
+
+      // Try the richest option first: image + text together in one native
+      // share sheet. Messages/email can use both; Instagram picks up the
+      // image for Stories (its main real sharing path); Twitter/Facebook
+      // use whichever part they support. This one call covers all of them.
+      try{
+        const imageBlob = await buildShareImage();
+        const imageFile = new File([imageBlob], 'letter-ladder-results.png', { type: 'image/png' });
+        if(navigator.canShare && navigator.canShare({ files: [imageFile] })){
+          await navigator.share({ files: [imageFile], text: shareText, title: 'Letter Ladder' });
+          return;
+        }
+      }catch(e){
+        if(e && e.name === 'AbortError') return; // person cancelled the share sheet - not an error
+        // otherwise fall through to the text-only options below
+      }
+
+      if(navigator.share){
+        try{
+          await navigator.share({ text: shareText });
+        }catch(e){
+          // person cancelled the native share sheet - not an error, do nothing
+        }
+      } else {
+        try{
+          await navigator.clipboard.writeText(shareText);
+          if(statusEl) statusEl.textContent = 'Copied to clipboard!';
+        }catch(e){
+          if(statusEl) statusEl.textContent = shareText;
+        }
+      }
+    });
+  }
+
+  const shuffleBtn = document.getElementById('shuffle-btn');
+  if(shuffleBtn){
+    bindTapAction(shuffleBtn, ()=>{
+      const order = bankState[activeTier].order;
+      // Fisher-Yates shuffle, in place
+      for(let i = order.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+      render(true);
+    });
+  }
+
+  const keyboardToggleBtn = document.getElementById('keyboard-toggle-btn');
+  if(keyboardToggleBtn){
+    bindTapAction(keyboardToggleBtn, ()=>{
+      keyboardEnabled = !keyboardEnabled;
+      localStorage.setItem('letterladder:keyboardEnabled', keyboardEnabled ? 'true' : 'false');
+      render(true);
+    });
+  }
+
+  let bankSyncSkip = false; // set true right before an input event we've already handled ourselves (tile tap / backspace), so the live-sync listener doesn't redundantly (or incorrectly) re-diff it
+
+  const bankBackspaceBtn = document.getElementById('bank-backspace-btn');
+  if(bankBackspaceBtn){
+    bindTapAction(bankBackspaceBtn, ()=>{
+      const inputEl = document.getElementById(`rung-input-${activeLength}`);
+      if(inputEl && inputEl.value.length > 0){
+        inputEl.value = inputEl.value.slice(0, -1);
+        if(bankState[activeTier]) bankState[activeTier].usedIndices.pop();
+        bankSyncSkip = true;
+        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+  }
+
+  const bankSubmitBtn = document.getElementById('bank-submit-btn');
+  if(bankSubmitBtn){
+    bindTapAction(bankSubmitBtn, ()=>{
+      tryCommitViaEnter();
+    });
+  }
+
+  panel.querySelectorAll('.bank-tile').forEach(tile => {
+    bindTapAction(tile, ()=>{
+      const inputEl = document.getElementById(`rung-input-${activeLength}`);
+      if(!inputEl) return;
+      if(inputEl.value.length >= Number(inputEl.maxLength)) return; // already full
+      inputEl.value += tile.dataset.letter;
+      // Track the EXACT tile instance tapped, so this specific tile (not
+      // just "a" matching letter) is what shows as used - matters when
+      // there are duplicate letters like the three E's in "generated".
+      if(bankState[activeTier]) bankState[activeTier].usedIndices.push(Number(tile.dataset.index));
+      bankSyncSkip = true;
+      inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  });
+
+  const hintBtn = document.getElementById('hint-btn');
+  if(hintBtn){
+    bindTapAction(hintBtn, ()=>{
+      const hintDisplay = document.getElementById('hint-display');
+      const unfilled = steps.filter(L => !guesses[L]);
+      if(unfilled.length === 0){
+        hintDisplay.innerHTML = `Every rung is already filled in!`;
+        return;
+      }
+      const targetLength = Math.max(...unfilled);
+      const dayHints = (typeof HINTS_SCHEDULE !== 'undefined' && HINTS_SCHEDULE[dateKey]) || null;
+      const tierHint = dayHints ? dayHints[activeTier] : null;
+      const targetWord = tierHint ? tierHint.solution.find(w => w.length === targetLength) : null;
+
+      if(!targetWord){
+        hintDisplay.innerHTML = `No hint available for this puzzle yet`;
+        return;
+      }
+
+      const hintInfo = getHintInfo(activeTier, targetLength);
+      const isSecondHint = hintInfo.count === 1;
+      const confirmMsg = isSecondHint
+        ? "Are you sure you'd like to use a second hint? This one reveals the first letter."
+        : "Are you sure you'd like to use a hint?";
+
+      showConfirmModal(confirmMsg, ()=>{
+        const updatedInfo = { ...hintInfo };
+        if(!isSecondHint){
+          updatedInfo.letters = joinAnd(getHintLetterOrder(targetWord).map(ch => ch.toUpperCase()));
+        } else {
+          updatedInfo.firstLetter = targetWord[0].toUpperCase();
+        }
+        updatedInfo.count = (updatedInfo.count || 0) + 1;
+        saveHintInfo(activeTier, targetLength, updatedInfo);
+        setLastHintedLength(activeTier, targetLength);
+        recordHintUsed(activeTier);
+        render(true);
+      });
+    });
+  }
+
+  panel.querySelectorAll('.rung.clickable').forEach(el => {
+    bindTapAction(el, ()=>{
+      activeLength = Number(el.dataset.length);
+      render(true);
+    });
+  });
+  panel.querySelectorAll('.delete-guess-btn').forEach(btn => {
+    function doDelete(){
+      const L = Number(btn.dataset.length);
+      const currentGuesses = loadGuesses(activeTier);
+      delete currentGuesses[L];
+      saveGuesses(activeTier, currentGuesses);
+      // Force the letter bank to recompute from scratch - otherwise its
+      // "which tiles are used" tracking stays stuck reflecting the guess
+      // that just got deleted, leaving tiles faded when they should be
+      // available again.
+      bankState[activeTier] = null;
+      // Clear the actual input's live value too - otherwise render()'s
+      // in-progress-typing preservation (added for the shuffle fix) would
+      // read this now-stale value straight off the DOM and put the just-
+      // deleted guess right back into the freshly-rendered box.
+      const existingInput = document.getElementById(`rung-input-${L}`);
+      if(existingInput) existingInput.value = '';
+      // Leave this same box open and focused, now empty, ready to type a
+      // fresh guess right away.
+      activeLength = L;
+      render(true);
+    }
+    // On iOS specifically, blur can fire on the currently-focused input
+    // BEFORE any mousedown/click on this button even happens - preventing
+    // mousedown's default (which worked for other browsers) isn't reliable
+    // there. Handling touchend directly, and preventing default on it,
+    // suppresses the whole synthesized mouse-event sequence (blur,
+    // mousedown, click) that would otherwise follow the tap - so the
+    // delete runs immediately, before any premature re-render can happen.
+    btn.addEventListener('touchend', (e)=>{
+      e.preventDefault();
+      doDelete();
+    });
+    btn.addEventListener('mousedown', (e)=> e.preventDefault());
+    btn.addEventListener('click', (e)=>{
+      // Only reached via an actual mouse click (desktop) - on touch
+      // devices the touchend handler above already ran and prevented
+      // this synthesized click from firing at all, so there's no
+      // double-delete.
+      e.stopPropagation();
+      doDelete();
+    });
+  });
+
+  let activeInput = null;
+  if(activeLength != null){
+    activeInput = document.getElementById(`rung-input-${activeLength}`);
+  }
+
+  if(activeInput){
+    if(focusInput){
+      // The rung must already be visible on screen for the person to have
+      // tapped it - so the browser's default "scroll focused input into
+      // view" behavior is never actually needed here, and on long puzzles
+      // it was yanking the page away from a position the person had
+      // deliberately scrolled to (hiding the icon row below the input).
+      const scrollYBefore = window.scrollY;
+      activeInput.focus({ preventScroll: true });
+      activeInput.select();
+      // Fallback for browsers that ignore preventScroll: if focusing still
+      // triggered a scroll jump, put the page back where it was.
+      requestAnimationFrame(()=>{
+        if(Math.abs(window.scrollY - scrollYBefore) > 5){
+          window.scrollTo(0, scrollYBefore);
+        }
+      });
+    }
+
+    let lastNonEmptyValue = activeInput.value || '';
+    let committed = false;
+    function commit(viaEnter){
+      if(committed) return;
+      committed = true;
+
+      const L = activeLength;
+      let liveValue = activeInput.value;
+      // On some iPhones, the field's value can appear to already be
+      // cleared by the moment an Enter-style submit is processed (before
+      // our code gets to read it), which would otherwise look identical
+      // to an abandoned/empty attempt and silently close with no error.
+      // Fall back to the last thing they actually typed in that case.
+      if(viaEnter && (!liveValue || liveValue.trim() === '') && lastNonEmptyValue){
+        liveValue = lastNonEmptyValue;
+      }
+      const raw = liveValue.replace(/\s+/g,'').toLowerCase().slice(0, L);
+
+      if(raw === ''){
+        if(pendingErrors){
+          // This box was reopened specifically to show an error (from an
+          // earlier Enter-triggered submit). If it blurs away untouched
+          // before the person retypes anything, don't silently wipe that
+          // error off the screen - keep it visible.
+          activeLength = null;
+          render(false, pendingErrors);
+          return;
+        }
+        // Nothing typed (or it was cleared) - just close without changing
+        // anything, no error needed for an abandoned/empty attempt.
+        activeLength = null;
+        render();
+        return;
+      }
+
+      markPlayedIfNeeded(activeTier);
+      const errs = [];
+
+      if(raw.length !== L){
+        errs.push(`Guess must be ${L} letters long`);
+      }
+
+      if(!/^[a-z]+$/.test(raw)){
+        errs.push("Guess must be letters only");
+      } else {
+        if(!WORD_SET.has(raw)) errs.push("Not a valid English word");
+        const letterProblems = checkGuessLetters(raw, startingWord, finalWord);
+        for(const problem of letterProblems){
+          if(problem.reason === 'missing_starting_letters'){
+            errs.push(`Guess doesn't include every letter from the bottom word: ${joinAnd(problem.letters.map(l => l.toUpperCase()))}`);
+          } else if(problem.reason === 'letter_not_in_final'){
+            const isPlural = problem.letters.length > 1;
+            errs.push(`Guess uses ${isPlural ? "letters that aren't" : "a letter that isn't"} in the top word: ${joinAnd(problem.letters.map(l => l.toUpperCase()))}`);
+          } else if(problem.reason === 'too_many_repeats'){
+            const parts = problem.details.map(d => `"${d.ch.toUpperCase()}" too many times — it's only in the final word ${timesText(d.fCount)}`);
+            errs.push(`Guess uses ${parts.join('; ')}`);
+          }
+        }
+      }
+
+      if(errs.length > 0){
+        activeInput.value = '';
+        bankState[activeTier] = null;
+        if(viaEnter){
+          // An explicit submit attempt - keep this rung open so they can
+          // fix it right away.
+          render(true, errs);
+        } else {
+          // Tapped away instead of pressing Enter (this is actually the
+          // common case on mobile, where the keyboard's "Return"/"Go" key
+          // often just blurs the field rather than firing a proper Enter
+          // key event). Still show the error - just don't force focus
+          // back, since they may have deliberately tapped somewhere else.
+          activeLength = null;
+          render(false, errs);
+        }
+        return;
+      }
+
+      const newGuesses = loadGuesses(activeTier);
+      newGuesses[L] = raw;
+      saveGuesses(activeTier, newGuesses);
+      lastFeedback[activeTier] = null;
+
+      // Auto-advance to the next incomplete box - the highest unfilled
+      // one, not the lowest. On iOS specifically, explicitly blurring the
+      // old input first, then synchronously re-rendering and focusing
+      // the new one (rather than letting an implicit blur-via-DOM-removal
+      // happen automatically), gives Safari a clearer, more reliable
+      // blur-then-focus transition to recognize for keeping the
+      // on-screen keyboard open across the swap. This is scoped to iOS
+      // only, not touch devices generally, since it was specifically
+      // reasoned about and tested against Safari's behavior - other
+      // mobile browsers may not need (or may not respond well to) the
+      // same explicit-blur workaround.
+      const nextIncomplete = [...steps].reverse().find(len => !newGuesses[len]);
+      if(isIOS && activeInput) activeInput.blur();
+      activeLength = nextIncomplete !== undefined ? nextIncomplete : null;
+      render(nextIncomplete !== undefined);
+    }
+
+    function tryCommitViaEnter(){
+      const now = Date.now();
+      if(now - lastEnterCommitAt < 700) return; // a duplicate signal for the
+                                                 // same keypress - ignore it
+      lastEnterCommitAt = now;
+      commit(true);
+    }
+
+    activeInput.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){ e.preventDefault(); tryCommitViaEnter(); return; }
+      // Only letters that actually appear in the top (final) word can be
+      // typed, and only up to as many times as they actually appear there -
+      // this can't guarantee a correct guess, but it stops obviously
+      // impossible letters (or too many repeats of a letter, like typing
+      // five t's when the final word only has one) from ever being entered.
+      if(e.key.length === 1 && /^[a-zA-Z]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey){
+        const key = e.key.toLowerCase();
+        const allowedCount = finalWord.toLowerCase().split('').filter(ch => ch === key).length;
+        if(allowedCount === 0){
+          e.preventDefault();
+        } else {
+          const currentValue = activeInput.value || '';
+          const currentCount = currentValue.toLowerCase().split('').filter(ch => ch === key).length;
+          if(currentCount >= allowedCount){
+            e.preventDefault();
+          }
+        }
+      }
+    });
+    function sanitizeToAllowedLetters(rawValue, finalWord){
+      // Strips out any letter not in the final word, and caps each letter
+      // at the exact number of times it's actually allowed to appear there
+      // - applied to the resulting value itself rather than trying to
+      // block individual keystrokes, since paste, autocorrect, and mobile
+      // swipe-typing don't reliably fire normal keydown events per
+      // character and can bypass a keystroke-level restriction entirely.
+      const allowedCounts = {};
+      for(const ch of finalWord.toLowerCase()){
+        allowedCounts[ch] = (allowedCounts[ch] || 0) + 1;
+      }
+      const usedCounts = {};
+      let result = '';
+      for(const ch of rawValue){
+        if(!/^[a-zA-Z]$/.test(ch)) continue;
+        const lower = ch.toLowerCase();
+        const allowed = allowedCounts[lower] || 0;
+        const used = usedCounts[lower] || 0;
+        if(used < allowed){
+          result += ch;
+          usedCounts[lower] = used + 1;
+        }
+      }
+      return result;
+    }
+
+    activeInput.addEventListener('input', (e)=>{
+      const sanitized = sanitizeToAllowedLetters(activeInput.value, finalWord);
+      if(sanitized !== activeInput.value){
+        activeInput.value = sanitized;
+      }
+      if(activeInput.value && activeInput.value.trim() !== ''){
+        lastNonEmptyValue = activeInput.value;
+      }
+      // Keep the bank's tiles in sync live, regardless of whether this
+      // keystroke came from the physical keyboard, a tapped tile, or the
+      // on-screen backspace button.
+      if(bankState[activeTier]){
+        const order = bankState[activeTier].order;
+        const arr = bankState[activeTier].usedIndices;
+        if(!bankSyncSkip){
+          // Genuine keyboard-driven change (typed or backspaced directly) -
+          // reconcile the tracked indices to match the new value's length.
+          while(arr.length > activeInput.value.length) arr.pop();
+          while(arr.length < activeInput.value.length){
+            const ch = activeInput.value[arr.length].toLowerCase();
+            const usedSet = new Set(arr);
+            const idx = order.findIndex((letter, i) => letter.toLowerCase() === ch && !usedSet.has(i));
+            if(idx === -1) break;
+            arr.push(idx);
+          }
+        }
+        bankSyncSkip = false;
+        const usedSet = new Set(arr);
+        const tileEls = panel.querySelectorAll('.bank-tile');
+        tileEls.forEach((tileEl) => {
+          const idx = Number(tileEl.dataset.index);
+          if(usedSet.has(idx)){
+            tileEl.classList.add('used');
+            tileEl.disabled = true;
+          } else {
+            tileEl.classList.remove('used');
+            tileEl.disabled = false;
+          }
+        });
+      }
+      // Mobile keyboards don't always fire a proper keydown for
+      // Return/Go on a plain input - but the 'input' event's inputType
+      // reliably reflects it when they do commit a line break, so this
+      // catches Enter presses that keydown alone might miss. The debounce
+      // above keeps this from double-firing alongside keydown for the
+      // exact same keypress.
+      if(e.inputType === 'insertLineBreak'){ tryCommitViaEnter(); }
+    });
+    activeInput.addEventListener('blur', ()=> commit(false));
+  }
+
+  const ladderScroll = document.getElementById('ladder-scroll');
+  if(ladderScroll && activeInput){
+    let wasFocused = false;
+    let refocusTimer = null;
+    ladderScroll.addEventListener('touchstart', ()=>{
+      wasFocused = document.activeElement === activeInput;
+    }, { passive: true });
+    ladderScroll.addEventListener('scroll', ()=>{
+      if(!wasFocused) return;
+      clearTimeout(refocusTimer);
+      refocusTimer = setTimeout(()=>{
+        if(document.activeElement !== activeInput){
+          activeInput.focus({ preventScroll: true });
+        }
+      }, 120);
+    }, { passive: true });
+  }
+}
+
+document.getElementById('tabs').addEventListener('click', (e)=>{
+  const tab = e.target.closest('.tab');
+  if(!tab) return;
+  activeTier = tab.dataset.tier;
+  localStorage.setItem('letterladder:activeTier', activeTier);
+  activeLength = null;
+  render();
+});
+
+render();
+showHowToPlayPopupIfNeeded();
+
+</script>
+</body>
+</html>

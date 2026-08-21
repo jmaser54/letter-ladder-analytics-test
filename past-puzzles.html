@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XVRY6X34NX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XVRY6X34NX');
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Past Puzzles — Letter Ladder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1B2A41; --bg-panel:#24384F; --rung:#F5EFE0; --ink:#F5EFE0; --ink-dim:#9FB3C8; --amber:#E8A33D; --green:#6FBF8B;
+  }
+  body{
+    margin:0; padding: 32px 16px 80px;
+    background: radial-gradient(120% 140% at 50% -10%, #24384F 0%, #1B2A41 55%, #142132 100%);
+    color: var(--ink); font-family:'Inter',system-ui,sans-serif;
+  }
+  .wrap{ max-width: 560px; margin:0 auto; }
+  h1{ font-family:'Fraunces',serif; font-weight:700; font-size:2rem; margin-bottom:4px; }
+  a{ color: var(--amber); }
+  .back{ display:inline-block; margin-bottom: 22px; color: var(--ink-dim); text-decoration:none; }
+  .back:hover{ color: var(--amber); }
+  .intro{ color: var(--ink-dim); margin-bottom: 24px; }
+
+  .day-card{
+    position: relative;
+    background: var(--bg-panel); border-radius:18px; padding: 20px 22px; margin-bottom:18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+  }
+  .day-date{ font-family:'Fraunces',serif; font-weight:700; font-size:1.2rem; margin-bottom:14px; padding-right:70px; }
+  .tier-row{ margin-bottom: 14px; }
+  .tier-row:last-child{ margin-bottom: 0; }
+  .tier-label{ font-size:0.72rem; text-transform:uppercase; letter-spacing:0.1em; color: var(--amber); font-weight:700; margin-bottom:6px; }
+  .chain{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-family:'Fraunces',serif; }
+  .chain-word{ background: var(--rung); color:#1B2A41; padding:4px 10px; border-radius:6px; font-weight:600; text-transform:uppercase; font-size:0.9rem; }
+  .chain-arrow{ color: var(--ink-dim); }
+
+  .play-btn{
+    position: absolute; top: 18px; right: 18px;
+    background: var(--green); color: #142132; text-decoration:none;
+    font-weight:700; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.04em;
+    padding: 8px 14px; border-radius:8px; line-height:1;
+    transition: filter 0.15s ease;
+  }
+  .play-btn:hover{ filter: brightness(1.1); }
+
+  .empty-state{ text-align:center; color: var(--ink-dim); padding: 40px 20px; background: var(--bg-panel); border-radius:18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Back to game</a>
+  <h1>Past Puzzles</h1>
+  <div class="intro">Missed a day? Play past puzzles here.</div>
+  <div id="past-puzzles-list"></div>
+</div>
+
+<script src="data/hints.js?v=1787151516"></script>
+<script>
+function todayKey(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function prettyDate(key){
+  const [y,m,d] = key.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return dt.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+}
+
+const container = document.getElementById('past-puzzles-list');
+// Reads from hints.js directly (same file that already powers the in-game
+// hint button and the Yesterday's Solution page) rather than a separate,
+// narrower file - hints.js always covers the entire scheduled window
+// regardless of exactly when the schedule script was last run, so this
+// page can never go stale the way a generation-time-dependent file would.
+const allDayKeys = Object.keys(HINTS_SCHEDULE || {}).sort().reverse();
+const today = todayKey();
+// Strictly before today only - never show today's own puzzle here (that's
+// what the main game page is for) and never a future one.
+const pastKeys = allDayKeys.filter(k => k < today);
+
+if(pastKeys.length === 0){
+  container.innerHTML = `<div class="empty-state">No past puzzles yet - check back after the first day has run!</div>`;
+} else {
+  const tierNames = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+  container.innerHTML = pastKeys.map(dayKey => {
+    const day = HINTS_SCHEDULE[dayKey];
+    const tierRows = ['easy','medium','hard']
+      .filter(tier => day[tier])
+      .map(tier => {
+        const p = day[tier];
+        return `
+          <div class="tier-row">
+            <div class="tier-label">${tierNames[tier]}</div>
+            <div class="chain">
+              <span class="chain-word">${p.start}</span>
+              <span class="chain-arrow">→</span>
+              <span class="chain-word">${p.final}</span>
+            </div>
+          </div>`;
+      }).join('');
+    return `
+      <div class="day-card">
+        <a class="play-btn" href="index.html?archive=${dayKey}">Play</a>
+        <div class="day-date">${prettyDate(dayKey)}</div>
+        ${tierRows}
+      </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>

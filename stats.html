@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XVRY6X34NX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XVRY6X34NX');
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Your Stats — Letter Ladder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1B2A41; --bg-panel:#24384F; --rung:#F5EFE0; --ink:#F5EFE0; --ink-dim:#9FB3C8; --amber:#E8A33D;
+  }
+  body{
+    margin:0; padding: 32px 16px 80px;
+    background: radial-gradient(120% 140% at 50% -10%, #24384F 0%, #1B2A41 55%, #142132 100%);
+    color: var(--ink); font-family:'Inter',system-ui,sans-serif;
+  }
+  .wrap{ max-width: 560px; margin:0 auto; }
+  h1{ font-family:'Fraunces',serif; font-weight:700; font-size:2rem; margin-bottom:4px; }
+  a{ color: var(--amber); }
+  .back{ display:inline-block; margin-bottom: 22px; color: var(--ink-dim); text-decoration:none; }
+  .back:hover{ color: var(--amber); }
+  .intro{ color: var(--ink-dim); margin-bottom: 24px; font-size: 0.92rem; }
+
+  .stat-card{ background: var(--bg-panel); border-radius:18px; padding: 22px 22px; margin-bottom:18px; box-shadow: 0 20px 50px rgba(0,0,0,0.35); }
+  .stat-card.total{ border: 1.5px solid rgba(232,163,61,0.35); }
+  .stat-title{ font-family:'Fraunces',serif; font-weight:700; font-size:1.15rem; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .stat-title .tier-dot{ width:10px; height:10px; border-radius:50%; display:inline-block; }
+  .tier-dot.easy{ background:#6FBF8B; }
+  .tier-dot.medium{ background:#E8A33D; }
+  .tier-dot.hard{ background:#D9705F; }
+  .tier-dot.total{ background:#F5EFE0; }
+
+  .stat-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .stat-box{ text-align:center; }
+  .stat-value{ font-family:'Fraunces',serif; font-weight:700; font-size:1.6rem; color: var(--amber); }
+  .stat-label{ font-size:0.72rem; color: var(--ink-dim); text-transform:uppercase; letter-spacing:0.06em; margin-top:2px; }
+  .streak-note{ margin-top:12px; font-size:0.72rem; color: var(--ink-dim); font-style:italic; font-weight:700; text-align:center; }
+
+  .empty-state{ text-align:center; color: var(--ink-dim); padding: 40px 20px; background: var(--bg-panel); border-radius:18px; }
+
+  .confirm-overlay{
+    position: fixed; inset: 0; background: rgba(10,16,26,0.6);
+    display: flex; align-items:center; justify-content:center;
+    z-index: 1000; padding: 20px;
+  }
+  .confirm-card{
+    background: var(--bg-panel); border-radius: 16px; padding: 24px 22px;
+    max-width: 340px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .confirm-message{ font-size: 1rem; margin-bottom: 20px; text-align:center; }
+  .confirm-actions{ display:flex; gap:10px; justify-content:center; }
+  .confirm-actions button{
+    flex:1; border:none; border-radius:10px; padding:10px 18px; cursor:pointer;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:0.9rem;
+  }
+  .confirm-cancel{ background: rgba(245,239,224,0.08); color: var(--ink); }
+  .confirm-ok{ background: var(--amber); color:#1B2A41; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Back to game</a>
+  <h1>Your Stats</h1>
+  <div class="intro">One point per letter for each completed ladder. Each hint subtracts 5 points from your final score.</div>
+  <div id="stats-list"></div>
+  <div style="text-align:center; margin-top: 10px;">
+    <button id="reset-btn" style="background:rgba(245,239,224,0.08); color:var(--ink-dim); border:none; border-radius:10px; padding:10px 18px; font-family:'Inter',sans-serif; font-size:0.85rem; cursor:pointer;">Reset my stats</button>
+  </div>
+</div>
+
+<script>
+function showConfirmModal(message, onConfirm){
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.innerHTML = `
+    <div class="confirm-card">
+      <div class="confirm-message">${message}</div>
+      <div class="confirm-actions">
+        <button type="button" class="confirm-cancel">Cancel</button>
+        <button type="button" class="confirm-ok">Confirm</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  function close(){ overlay.remove(); }
+  overlay.querySelector('.confirm-cancel').addEventListener('click', close);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+  overlay.querySelector('.confirm-ok').addEventListener('click', ()=>{
+    close();
+    onConfirm();
+  });
+}
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  showConfirmModal('Are you sure you want to reset your stats? This action cannot be undone.', ()=>{
+    localStorage.removeItem('letterladder:stats');
+    location.reload();
+  });
+});
+</script>
+
+<script>
+function blankStat(){
+  return { played:0, solved:0, currentStreak:0, maxStreak:0, lastSolvedDate:null, score:0 };
+}
+function loadStats(){
+  try{
+    const raw = localStorage.getItem('letterladder:stats');
+    if(raw){
+      const parsed = JSON.parse(raw);
+      for(const key of ['easy','medium','hard','total']){
+        parsed[key] = Object.assign(blankStat(), parsed[key] || {});
+      }
+      return parsed;
+    }
+  }catch(e){}
+  return { easy: blankStat(), medium: blankStat(), hard: blankStat(), total: blankStat() };
+}
+
+const stats = loadStats();
+const container = document.getElementById('stats-list');
+
+const totalEverPlayed = stats.easy.played + stats.medium.played + stats.hard.played;
+
+if(totalEverPlayed === 0){
+  container.innerHTML = `<div class="empty-state">No puzzles played yet on this device.</div>`;
+} else {
+  function solvePct(stat){
+    return stat.played === 0 ? 0 : Math.round((stat.solved / stat.played) * 100);
+  }
+  function renderCard(label, dotClass, stat, isTotal){
+    const streakNote = isTotal ? `<div class="streak-note">Complete all 3 puzzles to maintain this streak</div>` : '';
+    return `
+      <div class="stat-card ${isTotal ? 'total' : ''}">
+        <div class="stat-title"><span class="tier-dot ${dotClass}"></span>${label}</div>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="stat-value">${stat.played}</div><div class="stat-label">Played</div></div>
+          <div class="stat-box"><div class="stat-value">${solvePct(stat)}%</div><div class="stat-label">Solved</div></div>
+          <div class="stat-box"><div class="stat-value">${stat.currentStreak}</div><div class="stat-label">Current Streak</div></div>
+          <div class="stat-box"><div class="stat-value">${stat.maxStreak}</div><div class="stat-label">Max Streak</div></div>
+          <div class="stat-box" style="grid-column: span 2;"><div class="stat-value">${stat.score}</div><div class="stat-label">Score</div></div>
+        </div>
+        ${streakNote}
+      </div>`;
+  }
+
+  container.innerHTML = [
+    renderCard('Total', 'total', stats.total, true),
+    renderCard('Easy', 'easy', stats.easy, false),
+    renderCard('Medium', 'medium', stats.medium, false),
+    renderCard('Hard', 'hard', stats.hard, false),
+  ].join('');
+}
+</script>
+</body>
+</html>
