@@ -429,11 +429,14 @@
   }
   @keyframes letter-walk-climb{
     0%{ left: var(--start-x); top: var(--start-y); transform: translateY(0); opacity: 1; }
-    10%{ transform: translateY(-10px); }
-    20%{ transform: translateY(0); }
-    30%{ transform: translateY(-10px); }
-    40%{ transform: translateY(0); }
-    45%{ left: var(--ladder-x); transform: translateY(0); }
+    6%{ transform: translateY(-11px); }
+    12%{ left: calc(var(--start-x) + (var(--ladder-x) - var(--start-x)) * 0.22); transform: translateY(0); }
+    18%{ transform: translateY(-11px); }
+    24%{ left: calc(var(--start-x) + (var(--ladder-x) - var(--start-x)) * 0.44); transform: translateY(0); }
+    30%{ transform: translateY(-11px); }
+    36%{ left: calc(var(--start-x) + (var(--ladder-x) - var(--start-x)) * 0.66); transform: translateY(0); }
+    42%{ transform: translateY(-11px); }
+    48%{ left: var(--ladder-x); transform: translateY(0); }
     100%{ left: var(--ladder-x); top: -60px; opacity: 0; transform: translateY(0); }
   }
 </style>
@@ -1310,9 +1313,14 @@ function triggerLadderClimbCelebration(finalWord){
   ladder.style.bottom = `${window.innerHeight - rect.top}px`;
   overlay.appendChild(ladder);
 
-  // Matches the ladder's CSS position (right: 6vw, 46px wide) so the
-  // letters visually land centered on it rather than beside it.
-  const ladderCenterX = window.innerWidth - (window.innerWidth * 0.06) - 23;
+  // The ladder itself (right: 6vw, 46px wide, with 5px rails on each
+  // side) - climbing targets are spread across its interior width
+  // (between the rails) rather than every letter aiming for one exact
+  // spot, so they visibly use more of the ladder rather than stacking
+  // on its right rail.
+  const ladderRight = window.innerWidth - (window.innerWidth * 0.06);
+  const ladderInnerLeft = ladderRight - 46 + 9;
+  const ladderInnerWidth = 46 - 18;
 
   const letters = finalWord.toUpperCase().split('');
   letters.forEach((letter, i) => {
@@ -1320,16 +1328,21 @@ function triggerLadderClimbCelebration(finalWord){
     el.className = 'climb-letter';
     el.textContent = letter;
     const letterStartX = rect.left + (i * (rect.width / letters.length));
+    // Cycles across a few spots within the ladder's interior (left,
+    // middle, right, repeat) - and subtracts half the letter's own
+    // width (15px) since CSS "left" positions the left edge, not the
+    // center, so without this the letter visually lands off-center.
+    const targetCenterX = ladderInnerLeft + ladderInnerWidth * ((i % 3) / 2);
     el.style.setProperty('--start-x', `${letterStartX}px`);
     el.style.setProperty('--start-y', `${rect.top}px`);
-    el.style.setProperty('--ladder-x', `${ladderCenterX}px`);
-    el.style.animationDelay = `${i * 0.12}s`;
+    el.style.setProperty('--ladder-x', `${targetCenterX - 15}px`);
+    el.style.animationDelay = `${i * 0.7}s`;
     overlay.appendChild(el);
   });
 
   document.body.appendChild(overlay);
 
-  const totalDuration = 5500 + letters.length * 120 + 200; // animation length + staggered delays + small buffer
+  const totalDuration = 5500 + (letters.length - 1) * 700 + 300; // animation length + staggered delays + small buffer
   setTimeout(()=>{
     overlay.remove();
     showSummitBanner();
