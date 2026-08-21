@@ -197,7 +197,7 @@
   .error-list li{ position:relative; padding-left:18px; margin-bottom:6px; font-weight:600; color: var(--red); font-size:0.9rem; }
   .error-list li::before{ content:"●"; color: var(--red); position:absolute; left:0; font-size:0.6rem; top:5px; }
   .error-list-wrap{ display:flex; justify-content:center; }
-  .feedback.win{ color: var(--green); }
+  .feedback.win{ color: var(--amber); font-weight: 700; }
   .feedback.error{ color: var(--red); }
   .feedback.ok{ color: var(--ink-dim); font-weight:500; }
   .details{ margin-top:4px; text-align:center; font-size:0.8rem; color: var(--red); font-style:italic; }
@@ -614,14 +614,13 @@ function showHowToPlayPopupIfNeeded(){
     <div class="howto-card">
       <button type="button" class="howto-close" aria-label="Close">&times;</button>
       <h2>How to Play</h2>
-      <p>Build a ladder by filling in the missing rungs. Each rung adds exactly <strong>one letter</strong> to the word below it — you can rearrange the letters however you like, as long as every letter carries up plus the new one.</p>
+      <p>Fill in the missing words by adding exactly one letter to the word below. Rearrange the letters as needed to make a new word.</p>
       <ul>
         <li>Words can be guessed in any order</li>
-        <li><span class="howto-example-word">not</span> could climb to <span class="howto-example-word">tone</span>, <span class="howto-example-word">note</span>, or <span class="howto-example-word">torn</span></li>
+        <li><span class="howto-example-word">not</span> could become <span class="howto-example-word">tone</span>, <span class="howto-example-word">note</span>, or <span class="howto-example-word">torn</span></li>
         <li>A letter can repeat — <span class="howto-example-word">lead</span> can become <span class="howto-example-word">ladle</span> by adding a second "L"</li>
-        <li>Every word in the ladder must be a real English word</li>
+        <li>Every word must be a real English word</li>
       </ul>
-      <p>There's usually more than one path to the top — how many can you find?</p>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -1310,7 +1309,7 @@ function triggerTierWinConfetti(){
 function showSummitBanner(){
   const banner = document.createElement('div');
   banner.className = 'summit-banner';
-  banner.textContent = "Well done! You've reached the summit of today's letter ladder!";
+  banner.textContent = "Well done! You completed all three ladders!";
   document.body.appendChild(banner);
   setTimeout(()=> banner.remove(), 4000);
 }
@@ -1453,7 +1452,15 @@ function render(focusInput = false, pendingErrors = null){
     markPlayedIfNeeded(activeTier);
     const { valid, invalidSteps } = isValidChain(startingWord, guesses, finalWord);
     if(valid){
-      feedback = "🎉 You win! Nicely climbed.";
+      let winMessage = "Puzzle completed.";
+      if(getTimerChoice() === 'timed'){
+        const startedAt = localStorage.getItem(timerStartKey(activeTier));
+        if(startedAt){
+          const elapsedSeconds = Math.round((Date.now() - Number(startedAt)) / 1000);
+          winMessage = `Puzzle completed in ${elapsedSeconds} second${elapsedSeconds === 1 ? '' : 's'}.`;
+        }
+      }
+      feedback = winMessage;
       feedbackClass = 'win';
       markSolvedIfNeeded(activeTier, guesses);
       checkAndCelebrateIfAllComplete(finalWord);
@@ -1986,10 +1993,18 @@ function render(focusInput = false, pendingErrors = null){
     }
 
     function tryCommitViaEnter(){
-      const now = Date.now();
-      if(now - lastEnterCommitAt < 700) return; // a duplicate signal for the
-                                                 // same keypress - ignore it
-      lastEnterCommitAt = now;
+      // Only guarded on iOS - this exists specifically for a known iOS
+      // quirk where the physical keyboard or on-screen "Go" button can
+      // sometimes fire two separate "Enter was pressed" signals for one
+      // real keypress. Desktop doesn't have that issue, so applying this
+      // cooldown there could only ever incorrectly swallow a genuine,
+      // intentional second Enter press.
+      if(isIOS){
+        const now = Date.now();
+        if(now - lastEnterCommitAt < 700) return; // a duplicate signal for the
+                                                   // same keypress - ignore it
+        lastEnterCommitAt = now;
+      }
       commit(true);
     }
 
