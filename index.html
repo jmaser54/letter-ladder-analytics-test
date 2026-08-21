@@ -243,7 +243,7 @@
   }
   .bank-controls{
     display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
-    margin-top: 16px;
+    margin-top: 22px;
   }
   .bank-ctrl-btn{
     width: 40px; height: 40px;
@@ -260,6 +260,25 @@
   .bank-ctrl-btn.kb-on{ background: var(--amber); color: #1B2A41; }
   .bank-ctrl-btn.bank-submit-btn{ background: var(--amber); color: #1B2A41; }
   .bank-ctrl-btn.bank-group-spacer{ margin-left: 14px; }
+
+  .bank-primary-actions{
+    display: flex; gap: 10px;
+    max-width: 100%;
+    margin-bottom: 18px;
+  }
+  .bank-primary-btn{
+    flex: 1;
+    height: 52px;
+    border: none; border-radius: 12px;
+    background: rgba(245,239,224,0.08);
+    color: var(--ink);
+    display: flex; align-items:center; justify-content:center;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+  }
+  .bank-primary-btn:active{ transform: scale(0.96); }
+  .bank-primary-btn.bank-submit-btn{ background: var(--amber); color: #1B2A41; }
 
   .actions-row{ display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:10px; flex-shrink:0; }
   .hint-display{
@@ -1538,7 +1557,7 @@ function render(focusInput = false, pendingErrors = null){
   rungsHtml.push(`<div class="rung-row"><div class="rung-count">${startingWord.length}</div><div class="rung anchor" style="${rungBoxStyle(startingWord.length)}">${startingWord}</div></div>`);
 
   let bankHtml = '';
-  let extraControlsHtml = '';
+  let primaryActionsHtml = '';
   let kbToggleHtml = '';
   if(!isWon && activeLength != null){
     let bankTilesHtml = '';
@@ -1562,11 +1581,13 @@ function render(focusInput = false, pendingErrors = null){
         `<button type="button" class="bank-tile ${belowMatchSet.has(i) ? 'from-below' : ''} ${usedSet.has(i) ? 'used' : ''}" data-letter="${letter}" data-index="${i}" ${usedSet.has(i) ? 'disabled' : ''}>${letter.toUpperCase()}</button>`
       ).join('');
       bankTilesHtml = `<div class="bank-tiles" id="bank-tiles">${tilesHtml}</div>`;
-      const backspaceIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h11a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H9l-7-8 7-8z"></path><line x1="13" y1="9" x2="18" y2="15"></line><line x1="18" y1="9" x2="13" y2="15"></line></svg>`;
-      const submitIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>`;
-      extraControlsHtml = `
-        <button type="button" class="bank-ctrl-btn bank-group-spacer" id="bank-backspace-btn" aria-label="Delete last letter">${backspaceIcon}</button>
-        <button type="button" class="bank-ctrl-btn bank-submit-btn" id="bank-submit-btn" aria-label="Submit guess">${submitIcon}</button>
+      const backspaceIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h11a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H9l-7-8 7-8z"></path><line x1="13" y1="9" x2="18" y2="15"></line><line x1="18" y1="9" x2="13" y2="15"></line></svg>`;
+      const submitIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>`;
+      primaryActionsHtml = `
+        <div class="bank-primary-actions">
+          <button type="button" class="bank-primary-btn" id="bank-backspace-btn" aria-label="Delete last letter">${backspaceIcon}</button>
+          <button type="button" class="bank-primary-btn bank-submit-btn" id="bank-submit-btn" aria-label="Submit guess">${submitIcon}</button>
+        </div>
       `;
     }
     // No keyboard-toggle at all on desktop - a physical keyboard is
@@ -1576,6 +1597,7 @@ function render(focusInput = false, pendingErrors = null){
       kbToggleHtml = `<button type="button" class="bank-ctrl-btn bank-group-spacer ${keyboardEnabled ? 'kb-on' : ''}" id="keyboard-toggle-btn" aria-label="Toggle keyboard">${kbIcon}</button>`;
     }
     bankHtml = `
+      ${primaryActionsHtml}
       <div class="letter-bank" id="letter-bank">
         ${bankTilesHtml}
       </div>
@@ -1599,7 +1621,6 @@ function render(focusInput = false, pendingErrors = null){
       ${!isWon && activeLength != null ? `<button type="button" class="bank-ctrl-btn" id="shuffle-btn" aria-label="Shuffle letters">🔀</button>` : ''}
       ${showHintBtn ? `<button class="bank-ctrl-btn" id="hint-btn" type="button" aria-label="Hint">${lightbulbIcon}</button>` : ''}
       ${!isWon && activeLength != null ? kbToggleHtml : ''}
-      ${!isWon && activeLength != null ? extraControlsHtml : ''}
     </div>
   `;
 
