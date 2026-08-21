@@ -893,7 +893,7 @@ const HINTS_SCHEDULE = {
       "solution": [
         "ad",
         "had",
-        "head",
+        "hard",
         "heard",
         "shared",
         "trashed",
