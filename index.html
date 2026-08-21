@@ -394,6 +394,7 @@
   }
 
   .ladder-climb-overlay{ position: fixed; inset: 0; pointer-events: none; z-index: 999; }
+  .anchor-letter{ transition: opacity 0.2s ease; }
   .climb-ladder{
     position: fixed;
     right: 6vw;
@@ -425,7 +426,7 @@
     z-index: 1000;
     left: var(--start-x);
     top: var(--start-y);
-    animation: letter-walk-climb 5.1s ease-in forwards;
+    animation: letter-walk-climb 5.1s linear forwards;
   }
   @keyframes letter-walk-climb{
     0%{ left: var(--start-x); top: var(--start-y); transform: translateY(0); opacity: 1; }
@@ -1294,12 +1295,19 @@ function triggerLadderClimbCelebration(finalWord){
   // word walk out of their box (with a bouncy little walk) and climb a
   // ladder that appears on the right side of the screen, disappearing
   // off the top - no confetti for this one, since it's the bigger
-  // moment. The usual winning banner shows right after the letters have
-  // all finished exiting, not at the same time.
+  // moment. The real box empties out letter by letter in sync with each
+  // one leaving (not a separate effect happening elsewhere), and the
+  // full word reappears in the box a short pause after they've all
+  // exited, right before the usual winning banner shows.
   const anchorEl = document.getElementById('final-word-rung');
   if(!anchorEl){ showSummitBanner(); return; } // safety fallback
 
   const rect = anchorEl.getBoundingClientRect();
+  const originalText = anchorEl.textContent;
+
+  const letters = finalWord.toUpperCase().split('');
+  anchorEl.innerHTML = letters.map((ch, i) => `<span class="anchor-letter" data-anchor-index="${i}">${ch}</span>`).join('');
+
   const overlay = document.createElement('div');
   overlay.className = 'ladder-climb-overlay';
 
@@ -1322,7 +1330,6 @@ function triggerLadderClimbCelebration(finalWord){
   const ladderInnerLeft = ladderRight - 46 + 9;
   const ladderInnerWidth = 46 - 18;
 
-  const letters = finalWord.toUpperCase().split('');
   letters.forEach((letter, i) => {
     const el = document.createElement('div');
     el.className = 'climb-letter';
@@ -1336,17 +1343,27 @@ function triggerLadderClimbCelebration(finalWord){
     el.style.setProperty('--start-x', `${letterStartX}px`);
     el.style.setProperty('--start-y', `${rect.top}px`);
     el.style.setProperty('--ladder-x', `${targetCenterX - 15}px`);
-    el.style.animationDelay = `${i * 0.65}s`;
+    const delayMs = i * 650;
+    el.style.animationDelay = `${delayMs / 1000}s`;
     overlay.appendChild(el);
+
+    // Hide this letter's spot in the real box at the same moment its
+    // climbing counterpart starts walking out.
+    setTimeout(() => {
+      const anchorLetterEl = anchorEl.querySelector(`[data-anchor-index="${i}"]`);
+      if(anchorLetterEl) anchorLetterEl.style.opacity = '0';
+    }, delayMs);
   });
 
   document.body.appendChild(overlay);
 
-  const totalDuration = 5100 + (letters.length - 1) * 650 + 300; // animation length + staggered delays + small buffer
+  const exitDuration = 5100 + (letters.length - 1) * 650 + 300; // animation length + staggered delays + small buffer
+  const pauseAfterExit = 1750; // a beat with the box sitting empty, before the word returns
   setTimeout(()=>{
     overlay.remove();
+    anchorEl.textContent = originalText;
     showSummitBanner();
-  }, totalDuration);
+  }, exitDuration + pauseAfterExit);
 }
 
 function checkAndCelebrateIfAllComplete(finalWord){
