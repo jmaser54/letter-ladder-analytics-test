@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-K8X9ZNZP');</script>
+<!-- End Google Tag Manager -->
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XVRY6X34NX"></script>
 <script>
@@ -502,6 +509,10 @@
 </style>
 </head>
 <body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-K8X9ZNZP"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
 <div class="wrap">
   <header>
     <h1 class="brand">Letter Ladder</h1>
@@ -549,8 +560,8 @@
      so returning visitors' browsers are guaranteed to fetch the new version
      instead of a cached copy. -->
 <script src="data/words.js?v=2"></script>
-<script src="data/puzzles.js?v=1787319251"></script>
-<script src="data/hints.js?v=1787319251"></script>
+<script src="data/puzzles.js?v=1787376327"></script>
+<script src="data/hints.js?v=1787376327"></script>
 <script>
 // ---------- date helpers ----------
 function todayKey(){
@@ -1259,18 +1270,13 @@ function computeInitialUsedIndices(order, typedValue){
 function setupBankTileDragging(){
   const bankTiles = document.getElementById('bank-tiles');
   if(!bankTiles) return;
-  const HOLD_DELAY_MS = 400; // long enough to not trigger on a normal tap, short enough to feel responsive
+  const HOLD_DELAY_MS = 300; // long enough to not trigger on a normal tap, short enough to feel responsive
   const MOVE_CANCEL_THRESHOLD = 10; // px of movement before the hold timer fires that cancels the drag-intent (lets a quick swipe/scroll pass through untouched)
 
   bankTiles.querySelectorAll('.bank-tile').forEach(tile => {
     tile.addEventListener('pointerdown', (e)=>{
       if(tile.disabled) return;
-      // Reordering is only available while nothing's been picked from
-      // this bank yet - once a tile is used, its position is tracked by
-      // index to distinguish duplicate letters (like the three E's in
-      // "generated"), and reordering after that would corrupt which
-      // specific tile that tracking points to.
-      if(!bankState[activeTier] || bankState[activeTier].usedIndices.length > 0) return;
+      if(!bankState[activeTier]) return;
 
       const startClientX = e.clientX;
       const startClientY = e.clientY;
@@ -1317,8 +1323,11 @@ function setupBankTileDragging(){
           if(draggedIndex === targetIndex) continue;
 
           const order = bankState[activeTier].order;
+          const stableIds = bankState[activeTier].stableIds;
           const [moved] = order.splice(draggedIndex, 1);
           order.splice(targetIndex, 0, moved);
+          const [movedId] = stableIds.splice(draggedIndex, 1);
+          stableIds.splice(targetIndex, 0, movedId);
 
           // Relocate the actual DOM node rather than rebuilding the
           // list, so the drag gesture (and this tile's identity/
@@ -1838,13 +1847,18 @@ function render(focusInput = false, pendingErrors = null){
 
   const trashIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
   const lightbulbIcon = `<svg width="26" height="26" viewBox="0 0 24 24"><path d="M9 21h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path><path d="M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path><path d="M12 3a6.5 6.5 0 0 0-4 11.6c.7.6 1.2 1.5 1.3 2.4h5.4c.1-.9.6-1.8 1.3-2.4A6.5 6.5 0 0 0 12 3z" fill="#F5C842" stroke="#F5C842" stroke-width="1.3" stroke-linejoin="round"></path></svg>`;
-  // Hint always targets the highest unfilled rung. Up to two hints are
-  // allowed per rung (first reveals the letter set, second reveals the
-  // first letter) - once both have been used for this specific target,
-  // there's no third hint to offer, so the button disappears until a
-  // different (not-yet-maxed) rung becomes the target.
+  // Hint targets whichever box the player currently has open - falls
+  // back to the highest unfilled rung only if nothing's actively
+  // selected (or the active one happens to already be filled). Up to
+  // two hints are allowed per rung (first reveals the letter set,
+  // second reveals the first letter) - once both have been used for
+  // this specific target, there's no third hint to offer, so the
+  // button disappears until a different (not-yet-maxed) rung becomes
+  // the target.
   const unfilledForHint = steps.filter(L => !guesses[L]);
-  const hintTargetLength = unfilledForHint.length > 0 ? Math.max(...unfilledForHint) : null;
+  const hintTargetLength = (activeLength !== null && !guesses[activeLength])
+    ? activeLength
+    : (unfilledForHint.length > 0 ? Math.max(...unfilledForHint) : null);
   const hintMaxedForTarget = hintTargetLength !== null && getHintInfo(activeTier, hintTargetLength).count >= 2;
   const showHintBtn = !isWon && !hintMaxedForTarget;
 
@@ -1861,16 +1875,18 @@ function render(focusInput = false, pendingErrors = null){
         bankState[activeTier] = {
           word: bankWord,
           order,
+          stableIds: order.map((_, i) => i), // travels with each letter through drag-reorders, unlike its current array position
           forLength: activeLength,
           usedIndices: computeInitialUsedIndices(order, guesses[activeLength] || ''),
         };
       }
       const order = bankState[activeTier].order;
+      const stableIds = bankState[activeTier].stableIds;
       const usedSet = new Set(bankState[activeTier].usedIndices);
       const belowWord = getBelowWord(startingWord, guesses, steps, activeLength);
       const belowMatchSet = computeBelowMatchIndices(order, belowWord);
       const tilesHtml = order.map((letter, i) =>
-        `<button type="button" class="bank-tile ${belowMatchSet.has(i) ? 'from-below' : ''} ${usedSet.has(i) ? 'used' : ''}" data-letter="${letter}" data-index="${i}" ${usedSet.has(i) ? 'disabled' : ''}>${letter.toUpperCase()}</button>`
+        `<button type="button" class="bank-tile ${belowMatchSet.has(i) ? 'from-below' : ''} ${usedSet.has(stableIds[i]) ? 'used' : ''}" data-letter="${letter}" data-index="${i}" data-stable-id="${stableIds[i]}" ${usedSet.has(stableIds[i]) ? 'disabled' : ''}>${letter.toUpperCase()}</button>`
       ).join('');
       bankTilesHtml = `<div class="bank-tiles" id="bank-tiles">${tilesHtml}</div>`;
       const backspaceIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h11a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H9l-7-8 7-8z"></path><line x1="13" y1="9" x2="18" y2="15"></line><line x1="18" y1="9" x2="13" y2="15"></line></svg>`;
@@ -2027,7 +2043,7 @@ function render(focusInput = false, pendingErrors = null){
       // Track the EXACT tile instance tapped, so this specific tile (not
       // just "a" matching letter) is what shows as used - matters when
       // there are duplicate letters like the three E's in "generated".
-      if(bankState[activeTier]) bankState[activeTier].usedIndices.push(Number(tile.dataset.index));
+      if(bankState[activeTier]) bankState[activeTier].usedIndices.push(Number(tile.dataset.stableId));
       bankSyncSkip = true;
       inputEl.dispatchEvent(new Event('input', { bubbles: true }));
     });
@@ -2043,7 +2059,7 @@ function render(focusInput = false, pendingErrors = null){
         hintDisplay.innerHTML = `Every rung is already filled in!`;
         return;
       }
-      const targetLength = Math.max(...unfilled);
+      const targetLength = (activeLength !== null && !guesses[activeLength]) ? activeLength : Math.max(...unfilled);
       const dayHints = (typeof HINTS_SCHEDULE !== 'undefined' && HINTS_SCHEDULE[dateKey]) || null;
       const tierHint = dayHints ? dayHints[activeTier] : null;
       const targetWord = tierHint ? tierHint.solution.find(w => w.length === targetLength) : null;
@@ -2270,7 +2286,7 @@ function render(focusInput = false, pendingErrors = null){
     }
 
     activeInput.addEventListener('keydown', (e)=>{
-      if(e.key === 'Enter'){ e.preventDefault(); tryCommitViaEnter(); return; }
+      if(e.key === 'Enter'){ e.preventDefault(); return; }
       if(activeSlotHasUntouchedGuess && (e.key === 'Backspace' || e.key === 'Delete')){
         // This rung already had a complete guess when it was opened, and
         // nothing's been edited yet - clear it fully, matching exactly
