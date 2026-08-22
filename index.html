@@ -269,18 +269,19 @@
     line-height: 1;
   }
   .bank-ctrl-btn:active{ transform: scale(0.92); }
-  .bank-ctrl-btn.kb-on{ background: var(--amber); color: #1B2A41; }
+  .bank-ctrl-btn.kb-on{ background: var(--blue); color: #1B2A41; }
   .bank-ctrl-btn.bank-submit-btn{ background: var(--amber); color: #1B2A41; }
   .bank-ctrl-btn.bank-group-spacer{ margin-left: 14px; }
 
   .bank-primary-actions{
-    display: flex; gap: 10px;
+    display: flex; gap: 14px;
     max-width: 100%;
+    margin-top: 18px;
     margin-bottom: 18px;
   }
   .bank-primary-btn{
     flex: 1;
-    height: 52px;
+    height: 39px;
     border: none; border-radius: 12px;
     background: rgba(245,239,224,0.08);
     color: var(--ink);
@@ -292,7 +293,7 @@
   .bank-primary-btn:active{ transform: scale(0.96); }
   .bank-primary-btn.bank-submit-btn{ background: var(--amber); color: #1B2A41; }
 
-  .actions-row{ display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:10px; flex-shrink:0; }
+  .actions-row{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-top:10px; flex-shrink:0; }
   .hint-display{
     text-align:center; margin-top:10px; margin-bottom:18px; font-size:0.85rem; color: var(--ink-dim);
     font-style:italic; flex-shrink:0; min-height: 0;
@@ -1900,12 +1901,6 @@ function render(focusInput = false, pendingErrors = null){
     </div>
   `;
 
-  const iconControlsHtml = `
-    <div class="bank-controls bank-controls-centered">
-      ${!isWon && activeLength != null ? kbToggleHtml : ''}
-    </div>
-  `;
-
   const anyTierSolvedToday = TIERS.some(tier => getTodaysPuzzle(tier) && isTierComplete(tier));
 
   panel.className = `panel ${sizeTier}`;
@@ -1914,11 +1909,11 @@ function render(focusInput = false, pendingErrors = null){
     <div class="feedback ${feedbackClassFinal}">${feedbackHtml}</div>
     ${details.map(d=>`<div class="details">${d}</div>`).join('')}
     <div class="hint-display" id="hint-display"></div>
-    ${primaryActionsHtml}
     ${bankHtml}
-    ${iconControlsHtml}
+    ${primaryActionsHtml}
     <div class="actions-row">
       ${anyTierSolvedToday ? `<button class="btn-primary" id="share-btn" type="button">Share results</button>` : ''}
+      ${!isWon && activeLength != null ? kbToggleHtml : ''}
     </div>
     <div class="share-status" id="share-status"></div>
   `;
