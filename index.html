@@ -1893,9 +1893,9 @@ function render(focusInput = false, pendingErrors = null){
   // built independently of that condition rather than nested inside it.
   const primaryActionsHtml = `
     <div class="bank-primary-actions">
-      ${!isWon && activeLength != null ? `<button type="button" class="bank-primary-btn" id="shuffle-btn" aria-label="Shuffle letters">🔀</button>` : ''}
-      ${showHintBtn ? `<button type="button" class="bank-primary-btn" id="hint-btn" aria-label="Hint">${lightbulbIcon}</button>` : ''}
-      <button type="button" class="bank-primary-btn" id="clear-btn" aria-label="Clear guesses">${trashIcon}</button>
+      ${!isWon && activeLength != null ? `<button type="button" class="bank-ctrl-btn" id="shuffle-btn" aria-label="Shuffle letters">🔀</button>` : ''}
+      ${showHintBtn ? `<button type="button" class="bank-ctrl-btn" id="hint-btn" aria-label="Hint">${lightbulbIcon}</button>` : ''}
+      <button type="button" class="bank-ctrl-btn" id="clear-btn" aria-label="Clear guesses">${trashIcon}</button>
       ${backspaceButtonHtml}
     </div>
   `;
