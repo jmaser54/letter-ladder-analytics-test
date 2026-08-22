@@ -2297,11 +2297,22 @@ function render(focusInput = false, pendingErrors = null){
       }
       if(activeSlotHasUntouchedGuess && e.key.length === 1 && /^[a-zA-Z]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey){
         // Same situation, but the first action is typing a new letter
-        // rather than deleting - start the new guess fresh instead of
-        // appending onto the old one still sitting in the box.
+        // rather than deleting - fully take over this keystroke (rather
+        // than letting native typing proceed after a programmatic value
+        // change, which can conflict with the browser's own cursor/
+        // selection state) so the new guess starts fresh with just this
+        // one letter, instead of appending onto the old one still
+        // sitting in the box.
+        e.preventDefault();
         activeSlotHasUntouchedGuess = false;
-        activeInput.value = '';
-        if(bankState[activeTier]) bankState[activeTier].usedIndices = [];
+        const key = e.key.toLowerCase();
+        const allowedCount = finalWord.toLowerCase().split('').filter(ch => ch === key).length;
+        if(allowedCount > 0){
+          activeInput.value = key;
+          if(bankState[activeTier]) bankState[activeTier].usedIndices = [];
+          activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        return;
       }
       // Only letters that actually appear in the top (final) word can be
       // typed, and only up to as many times as they actually appear there -
