@@ -235,6 +235,18 @@
   }
   .bank-tile.from-below{ background: var(--amber); }
   .bank-tile:active{ transform: scale(0.9); }
+  .bank-tile{ touch-action: none; } /* prevents the browser's own touch-scroll from fighting the hold-and-drag gesture */
+  .bank-tile.dragging{
+    position: relative;
+    z-index: 50;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.45);
+    transition: none;
+    animation: tile-jiggle 0.15s ease-in-out infinite;
+  }
+  @keyframes tile-jiggle{
+    0%, 100%{ rotate: -5deg; }
+    50%{ rotate: 5deg; }
+  }
   .bank-tile.used{
     background: rgba(245,239,224,0.08);
     color: var(--ink-dim);
@@ -445,7 +457,7 @@
     z-index: 1000;
     left: var(--start-x);
     top: var(--start-y);
-    animation: letter-walk-climb 5.1s linear forwards;
+    animation: letter-walk-climb 3.06s linear forwards;
   }
   @keyframes letter-walk-climb{
     0%{ left: var(--start-x); top: var(--start-y); transform: translateY(0); opacity: 1; }
@@ -647,7 +659,7 @@ function showTimerChoicePopupIfNeeded(){
   overlay.innerHTML = `
     <div class="timer-card">
       <h2>Timed or untimed?</h2>
-      <p>Use a running clock, or play at your own pace - you can toggle the timer on/off at any time</p>
+      <p>Use a running clock, or play at your own pace - you can toggle the timer on/off at any time.</p>
       <div class="timer-choice-actions">
         <button type="button" class="timer-choice-timed">Timed</button>
         <button type="button" class="timer-choice-untimed">Untimed</button>
@@ -773,6 +785,7 @@ let activeTier = (function(){
   return TIERS.includes(saved) ? saved : 'easy';
 })();
 let activeLength = null; // which rung (by word length) is currently being typed into
+let skipNextBankTap = false; // true right after a drag-reorder finishes, so its release isn't also read as a letter-select tap
 let lastEnterCommitAt = 0; // guards against iOS sometimes firing two separate
                             // "Enter was pressed" signals for one keypress
 let lastFeedback = {}; // per-tier: the last shown error, so it survives a
@@ -1120,6 +1133,104 @@ function computeInitialUsedIndices(order, typedValue){
   return indices;
 }
 
+function setupBankTileDragging(){
+  const bankTiles = document.getElementById('bank-tiles');
+  if(!bankTiles) return;
+  const HOLD_DELAY_MS = 400; // long enough to not trigger on a normal tap, short enough to feel responsive
+  const MOVE_CANCEL_THRESHOLD = 10; // px of movement before the hold timer fires that cancels the drag-intent (lets a quick swipe/scroll pass through untouched)
+
+  bankTiles.querySelectorAll('.bank-tile').forEach(tile => {
+    tile.addEventListener('pointerdown', (e)=>{
+      if(tile.disabled) return;
+      // Reordering is only available while nothing's been picked from
+      // this bank yet - once a tile is used, its position is tracked by
+      // index to distinguish duplicate letters (like the three E's in
+      // "generated"), and reordering after that would corrupt which
+      // specific tile that tracking points to.
+      if(!bankState[activeTier] || bankState[activeTier].usedIndices.length > 0) return;
+
+      const startClientX = e.clientX;
+      const startClientY = e.clientY;
+      const rect = tile.getBoundingClientRect();
+      const grabOffsetX = e.clientX - rect.left;
+      const grabOffsetY = e.clientY - rect.top;
+      let dragging = false;
+      let holdTimeout = null;
+
+      function beginDrag(){
+        dragging = true;
+        skipNextBankTap = true;
+        tile.classList.add('dragging');
+        tile.style.position = 'fixed';
+        tile.style.left = `${rect.left}px`;
+        tile.style.top = `${rect.top}px`;
+        tile.style.width = `${rect.width}px`;
+        tile.style.height = `${rect.height}px`;
+        tile.style.margin = '0';
+      }
+
+      function onMove(ev){
+        if(!dragging){
+          const dx = Math.abs(ev.clientX - startClientX);
+          const dy = Math.abs(ev.clientY - startClientY);
+          if(dx > MOVE_CANCEL_THRESHOLD || dy > MOVE_CANCEL_THRESHOLD){
+            clearTimeout(holdTimeout);
+          }
+          return;
+        }
+        ev.preventDefault();
+        tile.style.left = `${ev.clientX - grabOffsetX}px`;
+        tile.style.top = `${ev.clientY - grabOffsetY}px`;
+
+        // Figure out whether the pointer has moved over a different,
+        // still-available tile - if so, that tile takes the dragged
+        // one's old spot and everything between shifts accordingly.
+        const others = [...bankTiles.querySelectorAll('.bank-tile')].filter(t => t !== tile && !t.disabled);
+        for(const other of others){
+          const oRect = other.getBoundingClientRect();
+          if(ev.clientX < oRect.left || ev.clientX > oRect.right || ev.clientY < oRect.top || ev.clientY > oRect.bottom) continue;
+          const draggedIndex = Number(tile.dataset.index);
+          const targetIndex = Number(other.dataset.index);
+          if(draggedIndex === targetIndex) continue;
+
+          const order = bankState[activeTier].order;
+          const [moved] = order.splice(draggedIndex, 1);
+          order.splice(targetIndex, 0, moved);
+
+          // Relocate the actual DOM node rather than rebuilding the
+          // list, so the drag gesture (and this tile's identity/
+          // listeners) is never interrupted mid-motion.
+          if(draggedIndex < targetIndex){ other.after(tile); } else { other.before(tile); }
+          [...bankTiles.querySelectorAll('.bank-tile')].forEach((el, i) => { el.dataset.index = String(i); });
+          break;
+        }
+      }
+
+      function onUp(){
+        clearTimeout(holdTimeout);
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointercancel', onUp);
+        if(dragging){
+          tile.classList.remove('dragging');
+          tile.style.position = '';
+          tile.style.left = '';
+          tile.style.top = '';
+          tile.style.width = '';
+          tile.style.height = '';
+          tile.style.margin = '';
+        }
+      }
+
+      holdTimeout = setTimeout(beginDrag, HOLD_DELAY_MS);
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
+    });
+  });
+}
+
+
 function getBankWord(finalWord, guesses, steps, activeLength){
   // The bank shows whichever already-filled slot is the nearest one above
   // the active length - since every valid lower word's letters must be a
@@ -1185,14 +1296,23 @@ function puzzleDayNumber(){
 function buildShareText(){
   const tierLabels = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
   const lines = [];
+  const timerChoice = getTimerChoice();
   for(const tier of TIERS){
     const puzzle = getTodaysPuzzle(tier);
     if(!puzzle) continue; // nothing scheduled for this tier today, skip it
     if(isTierComplete(tier)){
       const hints = getHintsUsed(tier);
-      lines.push(hints > 0
+      let line = hints > 0
         ? `${tierLabels[tier]}: ${'💡'.repeat(hints)}`
-        : `${tierLabels[tier]}: ✔️`);
+        : `${tierLabels[tier]}: ✔️`;
+      if(timerChoice === 'timed'){
+        const frozenElapsed = localStorage.getItem(timerElapsedKey(tier));
+        if(frozenElapsed !== null){
+          const seconds = (Number(frozenElapsed) / 1000).toFixed(1);
+          line += ` (${seconds}s)`;
+        }
+      }
+      lines.push(line);
     } else {
       lines.push(`${tierLabels[tier]}: —`);
     }
@@ -1367,7 +1487,7 @@ function triggerLadderClimbCelebration(finalWord){
     el.style.setProperty('--start-x', `${letterStartX}px`);
     el.style.setProperty('--start-y', `${rect.top}px`);
     el.style.setProperty('--ladder-x', `${targetCenterX - 15}px`);
-    const delayMs = i * 650;
+    const delayMs = i * 390;
     el.style.animationDelay = `${delayMs / 1000}s`;
     overlay.appendChild(el);
 
@@ -1381,8 +1501,8 @@ function triggerLadderClimbCelebration(finalWord){
 
   document.body.appendChild(overlay);
 
-  const exitDuration = 5100 + (letters.length - 1) * 650 + 300; // animation length + staggered delays + small buffer
-  const pauseAfterExit = 1750; // a beat with the box sitting empty, before the word returns
+  const exitDuration = 3060 + (letters.length - 1) * 390 + 180; // animation length + staggered delays + small buffer
+  const pauseAfterExit = 1050; // a beat with the box sitting empty, before the word returns
   setTimeout(()=>{
     overlay.remove();
     anchorEl.textContent = originalText;
@@ -1469,8 +1589,10 @@ function render(focusInput = false, pendingErrors = null){
             const elapsedSecondsTenths = (elapsedMs / 1000).toFixed(1);
             winMessage = `Puzzle completed in ${elapsedSecondsTenths} seconds`;
           } else {
-            const elapsedSeconds = Math.round(elapsedMs / 1000);
-            winMessage = `Puzzle completed in ${elapsedSeconds} second${elapsedSeconds === 1 ? '' : 's'}`;
+            const totalSeconds = Math.round(elapsedMs / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            winMessage = `Puzzle completed in ${minutes} minute${minutes === 1 ? '' : 's'} ${seconds} second${seconds === 1 ? '' : 's'}`;
           }
         }
       }
@@ -1697,22 +1819,10 @@ function render(focusInput = false, pendingErrors = null){
       const shareText = buildShareText();
       const statusEl = document.getElementById('share-status');
 
-      // Try the richest option first: image + text together in one native
-      // share sheet. Messages/email can use both; Instagram picks up the
-      // image for Stories (its main real sharing path); Twitter/Facebook
-      // use whichever part they support. This one call covers all of them.
-      try{
-        const imageBlob = await buildShareImage();
-        const imageFile = new File([imageBlob], 'letter-ladder-results.png', { type: 'image/png' });
-        if(navigator.canShare && navigator.canShare({ files: [imageFile] })){
-          await navigator.share({ files: [imageFile], text: shareText, title: 'Letter Ladder' });
-          return;
-        }
-      }catch(e){
-        if(e && e.name === 'AbortError') return; // person cancelled the share sheet - not an error
-        // otherwise fall through to the text-only options below
-      }
-
+      // Text-only share - bundling the image in alongside the text
+      // resulted in both showing up together in the native share sheet
+      // (e.g. a Messages share getting the image attachment AND the text
+      // caption at once), which felt redundant rather than helpful.
       if(navigator.share){
         try{
           await navigator.share({ text: shareText });
@@ -1776,6 +1886,7 @@ function render(focusInput = false, pendingErrors = null){
 
   panel.querySelectorAll('.bank-tile').forEach(tile => {
     bindTapAction(tile, ()=>{
+      if(skipNextBankTap){ skipNextBankTap = false; return; } // this tap was actually the release of a drag - don't also select the letter
       const inputEl = document.getElementById(`rung-input-${activeLength}`);
       if(!inputEl) return;
       if(inputEl.value.length >= Number(inputEl.maxLength)) return; // already full
@@ -1788,6 +1899,7 @@ function render(focusInput = false, pendingErrors = null){
       inputEl.dispatchEvent(new Event('input', { bubbles: true }));
     });
   });
+  setupBankTileDragging();
 
   const hintBtn = document.getElementById('hint-btn');
   if(hintBtn){
