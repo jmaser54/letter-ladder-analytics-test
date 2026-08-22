@@ -235,7 +235,7 @@
   }
   .bank-tile.from-below{ background: var(--amber); }
   .bank-tile:active{ transform: scale(0.9); }
-  .bank-tile{ touch-action: none; } /* prevents the browser's own touch-scroll from fighting the hold-and-drag gesture */
+  .bank-tile{ touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; } /* prevents the browser's own touch-scroll AND text-selection highlight from fighting the hold-and-drag gesture */
   .bank-tile.dragging{
     position: relative;
     z-index: 50;
@@ -399,6 +399,27 @@
   }
   @keyframes confetti-fall{
     to{ transform: translateY(110vh) rotate(360deg); opacity: 0.4; }
+  }
+
+  .migration-banner{
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--amber);
+    color: #1B2A41;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 10px 40px 10px 14px;
+    z-index: 1001;
+  }
+  .migration-banner a{ color: #1B2A41; text-decoration: underline; }
+  .migration-banner-persistent .migration-dismiss{
+    position: absolute;
+    right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none;
+    font-size: 1.3rem; line-height: 1;
+    color: #1B2A41; cursor: pointer;
+    padding: 4px;
   }
 
   .summit-banner{
@@ -796,6 +817,104 @@ let bankState = {}; // per tier: { word, order } - the source word the bank's
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 let keyboardEnabled = isTouchDevice ? (localStorage.getItem('letterladder:keyboardEnabled') === 'true') : true; // bank-first on mobile, always-on on desktop
+const OLD_DOMAIN_HOSTNAME = 'jmaser54.github.io';
+const NEW_DOMAIN_HOSTNAME = 'letterladder.io';
+
+function collectMigratableData(){
+  const data = {};
+  const globalKeys = [
+    'letterladder:stats',
+    'letterladder:activeTier',
+    'letterladder:howToPlaySeen',
+    'letterladder:keyboardEnabled',
+    'letterladder:timerChoice',
+    'letterladder:timerChoiceMade',
+  ];
+  for(const key of globalKeys){
+    const value = localStorage.getItem(key);
+    if(value !== null) data[key] = value;
+  }
+  // Also grab everything scoped to today's date (in-progress gameplay:
+  // guesses, hints used, timer state, played/solved/loss bookkeeping
+  // flags) - past days' per-puzzle data isn't included since it's no
+  // longer actionable anyway (an old puzzle can't be replayed), and the
+  // aggregate stats object above already captures what matters from
+  // history (streaks, totals, scores).
+  const todayPrefix = `letterladder:${todayKey()}:`;
+  for(let i = 0; i < localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(key && key.startsWith(todayPrefix)){
+      data[key] = localStorage.getItem(key);
+    }
+  }
+  return data;
+}
+
+function importMigrationDataIfPresent(){
+  if(window.location.hostname !== NEW_DOMAIN_HOSTNAME) return;
+  const params = new URLSearchParams(window.location.search);
+  const migrateParam = params.get('migrate');
+  if(!migrateParam) return;
+
+  try{
+    const data = JSON.parse(decodeURIComponent(migrateParam));
+    let importedCount = 0;
+    for(const [key, value] of Object.entries(data)){
+      // Only fill in keys that aren't already present locally, so this
+      // never overwrites any fresh progress already made on the new
+      // domain before clicking the migration link.
+      if(localStorage.getItem(key) === null){
+        localStorage.setItem(key, value);
+        importedCount++;
+      }
+    }
+    if(importedCount > 0){
+      window.letterLadderMigrationJustImported = true;
+    }
+  }catch(e){
+    // malformed or tampered migrate param - fail silently rather than
+    // breaking the page load over it
+  }
+
+  // Clean the URL either way, so the migration data doesn't linger in
+  // the address bar or browser history.
+  const cleanUrl = window.location.origin + window.location.pathname;
+  window.history.replaceState({}, '', cleanUrl);
+}
+
+function showMigrationWelcomeBannerIfNeeded(){
+  if(!window.letterLadderMigrationJustImported) return;
+  const banner = document.createElement('div');
+  banner.className = 'migration-banner';
+  banner.textContent = "Welcome back! Your streak and stats have carried over.";
+  document.body.appendChild(banner);
+  setTimeout(()=> banner.remove(), 5000);
+}
+
+function showMigrationLinkBannerIfNeeded(){
+  if(window.location.hostname !== OLD_DOMAIN_HOSTNAME) return;
+  if(localStorage.getItem('letterladder:migrationBannerDismissed')) return;
+  const data = collectMigratableData();
+  if(Object.keys(data).length === 0) return; // nothing meaningful to offer migrating
+
+  const encoded = encodeURIComponent(JSON.stringify(data));
+  const migrationUrl = `https://${NEW_DOMAIN_HOSTNAME}/?migrate=${encoded}`;
+
+  const banner = document.createElement('div');
+  banner.className = 'migration-banner migration-banner-persistent';
+  banner.innerHTML = `
+    <span>We've moved! <a href="${migrationUrl}">Play at letterladder.io</a> to keep your streak and stats.</span>
+    <button type="button" class="migration-dismiss" aria-label="Dismiss">&times;</button>
+  `;
+  document.body.appendChild(banner);
+  banner.querySelector('.migration-dismiss').addEventListener('click', () => {
+    localStorage.setItem('letterladder:migrationBannerDismissed', '1');
+    banner.remove();
+  });
+}
+
+importMigrationDataIfPresent();
+
 const { key: dateKey, isArchive: isArchiveMode } = resolveDateKey();
 
 // ---------- optional per-puzzle timer ----------
@@ -1302,15 +1421,29 @@ function buildShareText(){
     if(!puzzle) continue; // nothing scheduled for this tier today, skip it
     if(isTierComplete(tier)){
       const hints = getHintsUsed(tier);
-      let line = hints > 0
-        ? `${tierLabels[tier]}: ${'💡'.repeat(hints)}`
-        : `${tierLabels[tier]}: ✔️`;
+      let timeSuffix = null;
       if(timerChoice === 'timed'){
         const frozenElapsed = localStorage.getItem(timerElapsedKey(tier));
         if(frozenElapsed !== null){
-          const seconds = (Number(frozenElapsed) / 1000).toFixed(1);
-          line += ` (${seconds}s)`;
+          const totalSeconds = Number(frozenElapsed) / 1000;
+          timeSuffix = totalSeconds < 60
+            ? `${totalSeconds.toFixed(1)}s`
+            : `${Math.floor(totalSeconds / 60)}m ${Math.round(totalSeconds % 60)}s`;
         }
+      }
+      let line;
+      if(timeSuffix !== null){
+        // The time itself already proves completion, so the checkmark
+        // (and parentheses around the time) would just be redundant -
+        // hints still get shown alongside it though, since that's
+        // distinct, meaningful info about how much help was needed.
+        line = hints > 0
+          ? `${tierLabels[tier]}: ${'💡'.repeat(hints)} ${timeSuffix}`
+          : `${tierLabels[tier]}: ${timeSuffix}`;
+      } else {
+        line = hints > 0
+          ? `${tierLabels[tier]}: ${'💡'.repeat(hints)}`
+          : `${tierLabels[tier]}: ✔️`;
       }
       lines.push(line);
     } else {
@@ -1774,12 +1907,12 @@ function render(focusInput = false, pendingErrors = null){
     <div class="ladder-scroll" id="ladder-scroll"><div class="ladder">${rungsHtml.join('')}</div></div>
     <div class="feedback ${feedbackClassFinal}">${feedbackHtml}</div>
     ${details.map(d=>`<div class="details">${d}</div>`).join('')}
+    <div class="hint-display" id="hint-display"></div>
     ${bankHtml}
     ${iconControlsHtml}
     <div class="actions-row">
       ${anyTierSolvedToday ? `<button class="btn-primary" id="share-btn" type="button">Share results</button>` : ''}
     </div>
-    <div class="hint-display" id="hint-display"></div>
     <div class="share-status" id="share-status"></div>
   `;
 
@@ -2266,6 +2399,8 @@ document.getElementById('tabs').addEventListener('click', (e)=>{
 
 render(!isTouchDevice);
 showHowToPlayPopupIfNeeded();
+showMigrationWelcomeBannerIfNeeded();
+showMigrationLinkBannerIfNeeded();
 timerTickInterval = setInterval(renderTimerWidget, 1000);
 
 </script>
