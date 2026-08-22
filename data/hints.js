@@ -934,5 +934,154 @@ const HINTS_SCHEDULE = {
         "jointers"
       ]
     }
+  },
+  "2026-08-22": {
+    "easy": {
+      "start": "bar",
+      "final": "barked",
+      "solution": [
+        "bar",
+        "bear",
+        "bread",
+        "barked"
+      ]
+    },
+    "medium": {
+      "start": "rot",
+      "final": "smoother",
+      "solution": [
+        "rot",
+        "sort",
+        "short",
+        "others",
+        "mothers",
+        "smoother"
+      ]
+    },
+    "hard": {
+      "start": "me",
+      "final": "medication",
+      "solution": [
+        "me",
+        "men",
+        "mine",
+        "anime",
+        "median",
+        "mediant",
+        "dominate",
+        "mediation",
+        "medication"
+      ]
+    }
+  },
+  "2026-08-23": {
+    "easy": {
+      "start": "at",
+      "final": "thank",
+      "solution": [
+        "at",
+        "tan",
+        "tank",
+        "thank"
+      ]
+    },
+    "medium": {
+      "start": "sate",
+      "final": "masteries",
+      "solution": [
+        "sate",
+        "stare",
+        "stream",
+        "steamer",
+        "steamers",
+        "masteries"
+      ]
+    },
+    "hard": {
+      "start": "lee",
+      "final": "reclaimed",
+      "solution": [
+        "lee",
+        "leer",
+        "elder",
+        "dealer",
+        "emerald",
+        "remedial",
+        "reclaimed"
+      ]
+    }
+  },
+  "2026-08-24": {
+    "easy": {
+      "start": "in",
+      "final": "widen",
+      "solution": [
+        "in",
+        "win",
+        "wind",
+        "widen"
+      ]
+    },
+    "medium": {
+      "start": "ear",
+      "final": "lateral",
+      "solution": [
+        "ear",
+        "real",
+        "alter",
+        "taller",
+        "lateral"
+      ]
+    },
+    "hard": {
+      "start": "is",
+      "final": "flustering",
+      "solution": [
+        "is",
+        "sin",
+        "sing",
+        "sting",
+        "string",
+        "rusting",
+        "rustling",
+        "resulting",
+        "flustering"
+      ]
+    }
+  },
+  "2026-08-25": {
+    "easy": {
+      "start": "he",
+      "final": "heart",
+      "solution": [
+        "he",
+        "the",
+        "heat",
+        "heart"
+      ]
+    },
+    "medium": {
+      "start": "as",
+      "final": "sneaky",
+      "solution": [
+        "as",
+        "sea",
+        "sake",
+        "snake",
+        "sneaky"
+      ]
+    },
+    "hard": {
+      "start": "ma",
+      "final": "inflame",
+      "solution": [
+        "ma",
+        "man",
+        "main",
+        "anime",
+        "famine",
+        "inflame"
+      ]
+    }
   }
 };

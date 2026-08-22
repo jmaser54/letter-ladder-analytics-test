@@ -363,5 +363,61 @@ const PUZZLE_SCHEDULE = {
       "start": "son",
       "final": "jointers"
     }
+  },
+  "2026-08-22": {
+    "easy": {
+      "start": "bar",
+      "final": "barked"
+    },
+    "medium": {
+      "start": "rot",
+      "final": "smoother"
+    },
+    "hard": {
+      "start": "me",
+      "final": "medication"
+    }
+  },
+  "2026-08-23": {
+    "easy": {
+      "start": "at",
+      "final": "thank"
+    },
+    "medium": {
+      "start": "sate",
+      "final": "masteries"
+    },
+    "hard": {
+      "start": "lee",
+      "final": "reclaimed"
+    }
+  },
+  "2026-08-24": {
+    "easy": {
+      "start": "in",
+      "final": "widen"
+    },
+    "medium": {
+      "start": "ear",
+      "final": "lateral"
+    },
+    "hard": {
+      "start": "is",
+      "final": "flustering"
+    }
+  },
+  "2026-08-25": {
+    "easy": {
+      "start": "he",
+      "final": "heart"
+    },
+    "medium": {
+      "start": "as",
+      "final": "sneaky"
+    },
+    "hard": {
+      "start": "ma",
+      "final": "inflame"
+    }
   }
 };
