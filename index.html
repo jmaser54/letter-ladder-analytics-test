@@ -1919,7 +1919,7 @@ function render(focusInput = false, pendingErrors = null){
   `;
 
   const lastHintedLength = getLastHintedLength(activeTier);
-  if(lastHintedLength !== null){
+  if(lastHintedLength !== null && !guesses[lastHintedLength]){
     const hd = document.getElementById('hint-display');
     if(hd) hd.innerHTML = buildHintDisplayHtml(activeTier, lastHintedLength);
   }
