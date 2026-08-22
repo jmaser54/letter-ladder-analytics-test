@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Moving your Letter Ladder stats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1B2A41; --bg-panel:#24384F; --rung:#F5EFE0; --ink:#F5EFE0; --ink-dim:#9FB3C8; --amber:#E8A33D;
+  }
+  body{
+    margin:0; padding: 48px 18px;
+    background: radial-gradient(120% 140% at 50% -10%, #24384F 0%, #1B2A41 55%, #142132 100%);
+    color: var(--ink); font-family:'Inter',system-ui,sans-serif;
+    min-height: 100vh;
+  }
+  .wrap{ max-width: 520px; margin:0 auto; text-align:center; }
+  h1{ font-family:'Fraunces',serif; font-weight:700; font-size:1.7rem; margin-bottom:10px; }
+  p{ color: var(--ink-dim); line-height:1.5; }
+  .card{ background: var(--bg-panel); border-radius:18px; padding: 26px 24px; margin-top:22px; box-shadow: 0 20px 50px rgba(0,0,0,0.35); }
+  .summary{ text-align:left; margin: 18px 0; font-size:0.9rem; }
+  .summary div{ padding: 5px 0; border-bottom: 1px solid rgba(245,239,224,0.08); overflow:hidden; }
+  .summary div:last-child{ border-bottom:none; }
+  .summary .label{ color: var(--ink-dim); }
+  .summary .val{ float:right; font-weight:700; color: var(--amber); }
+  a.go{
+    display:inline-block; margin-top:16px; background: var(--amber); color:#1B2A41;
+    text-decoration:none; font-weight:700; padding: 14px 26px; border-radius:12px; font-size:1rem;
+  }
+  .muted{ font-size:0.82rem; margin-top:18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Letter Ladder has moved</h1>
+  <p>We're moving to <strong>letterladder.io</strong>. This page carries your streak and stats over to the new home.</p>
+  <div class="card" id="card">
+    <p>Checking for your saved progress…</p>
+  </div>
+</div>
+
+<script>
+// This page exists purely to hand the old site's saved progress over to
+// the new domain.
+//
+// Why it's needed: once a custom domain is attached, GitHub Pages issues
+// an HTTP redirect from the old project URL straight to the new domain -
+// and that happens before any JavaScript runs, so a script living on the
+// old project URL can never execute to read its own saved data. Browsers
+// also scope saved data per-origin, so the new domain cannot reach it
+// either.
+//
+// This page sidesteps both problems by living on a repo that shares the
+// same origin as the old site (so it CAN read that saved data) while not
+// having a custom domain of its own (so it is NOT redirected away).
+// It must therefore be hosted on a repo with no custom domain attached.
+const NEW_DOMAIN = 'https://letterladder.io/';
+const MAX_URL_LENGTH = 7000; // stay comfortably inside every browser's URL limit
+
+function collectAll(){
+  const data = {};
+  for(let i = 0; i < localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(key && key.startsWith('letterladder:')) data[key] = localStorage.getItem(key);
+  }
+  return data;
+}
+
+// A long-time player could have enough saved days that the full payload
+// outgrows what a URL can safely carry - so fall back to the parts that
+// actually matter (overall stats + preferences), which stay small no
+// matter how long someone has been playing.
+function trimToEssentials(data){
+  const keep = [
+    'letterladder:stats',
+    'letterladder:activeTier',
+    'letterladder:howToPlaySeen',
+    'letterladder:keyboardEnabled',
+    'letterladder:timerChoice',
+    'letterladder:timerChoiceMade',
+  ];
+  const out = {};
+  for(const k of keep){ if(data[k] !== undefined) out[k] = data[k]; }
+  return out;
+}
+
+function buildUrl(data){
+  return NEW_DOMAIN + '?migrate=' + encodeURIComponent(JSON.stringify(data));
+}
+
+const card = document.getElementById('card');
+let data = collectAll();
+
+// Automatic round trip: the new site sends people here with a return
+// address so this can read the old saved progress (only reachable from
+// this origin) and hand it straight back. No interaction needed - most
+// people will only ever see a brief flash of this page.
+const returnTo = new URLSearchParams(window.location.search).get('return');
+if(returnTo){
+  // Only ever bounce back to the real destination, never to an arbitrary
+  // address someone appended to this URL.
+  if(returnTo.indexOf(NEW_DOMAIN) === 0){
+    card.innerHTML = '<p>Moving your stats over…</p>';
+    let payload = data;
+    let url = NEW_DOMAIN + '?migrate=' + encodeURIComponent(JSON.stringify(payload));
+    if(url.length > MAX_URL_LENGTH){
+      payload = trimToEssentials(data);
+      url = NEW_DOMAIN + '?migrate=' + encodeURIComponent(JSON.stringify(payload));
+    }
+    window.location.replace(url);
+  } else {
+    window.location.replace(NEW_DOMAIN);
+  }
+} else if(Object.keys(data).length === 0){
+  card.innerHTML =
+    '<p>No saved progress found in this browser.</p>' +
+    '<p class="muted">If you played on a different browser or device, open this same page there instead - progress is saved per browser, not to an account.</p>' +
+    '<a class="go" href="' + NEW_DOMAIN + '">Go to letterladder.io</a>';
+} else {
+  let url = buildUrl(data);
+  let trimmed = false;
+  if(url.length > MAX_URL_LENGTH){
+    data = trimToEssentials(data);
+    url = buildUrl(data);
+    trimmed = true;
+  }
+
+  // Show exactly what's about to move, so it's obvious it actually worked.
+  let summaryHtml = '';
+  try{
+    const stats = JSON.parse(data['letterladder:stats'] || '{}');
+    const rows = [];
+    for(const tier of ['easy','medium','hard']){
+      const s = stats[tier];
+      if(s && (s.played || s.solved)){
+        const name = tier[0].toUpperCase() + tier.slice(1);
+        rows.push('<div><span class="label">' + name + ' - current streak</span><span class="val">' + (s.currentStreak || 0) + '</span></div>');
+        rows.push('<div><span class="label">' + name + ' - best streak</span><span class="val">' + (s.maxStreak || 0) + '</span></div>');
+        rows.push('<div><span class="label">' + name + ' - solved</span><span class="val">' + (s.solved || 0) + '</span></div>');
+      }
+    }
+    if(rows.length) summaryHtml = '<div class="summary">' + rows.join('') + '</div>';
+  }catch(e){}
+
+  card.innerHTML =
+    '<p><strong>Found your progress.</strong> Here is what is moving over:</p>' +
+    summaryHtml +
+    '<a class="go" href="' + url + '">Move my stats to letterladder.io</a>' +
+    (trimmed ? '<p class="muted">Your overall stats and streaks are moving. Individual in-progress guesses from past days are staying behind.</p>' : '') +
+    '<p class="muted">Already played a little on the new site? No problem - your totals get combined rather than replaced.</p>';
+}
+</script>
+</body>
+</html>
