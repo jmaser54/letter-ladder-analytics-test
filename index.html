@@ -1889,7 +1889,7 @@ function render(focusInput = false, pendingErrors = null){
         `<button type="button" class="bank-tile ${belowMatchSet.has(i) ? 'from-below' : ''} ${usedSet.has(stableIds[i]) ? 'used' : ''}" data-letter="${letter}" data-index="${i}" data-stable-id="${stableIds[i]}" ${usedSet.has(stableIds[i]) ? 'disabled' : ''}>${letter.toUpperCase()}</button>`
       ).join('');
       bankTilesHtml = `<div class="bank-tiles" id="bank-tiles">${tilesHtml}</div>`;
-      const backspaceIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h11a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H9l-7-8 7-8z"></path><line x1="13" y1="9" x2="18" y2="15"></line><line x1="18" y1="9" x2="13" y2="15"></line></svg>`;
+      const backspaceIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6H9l-6 6 6 6h11a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1Z"></path><line x1="8.5" y1="9" x2="14.5" y2="15"></line><line x1="14.5" y1="9" x2="8.5" y2="15"></line></svg>`;
       backspaceButtonHtml = `<button type="button" class="bank-primary-btn bank-submit-btn" id="bank-backspace-btn" aria-label="Delete last letter">${backspaceIcon}</button>`;
     }
     // No keyboard-toggle at all on desktop - a physical keyboard is
@@ -2059,7 +2059,11 @@ function render(focusInput = false, pendingErrors = null){
         hintDisplay.innerHTML = `Every rung is already filled in!`;
         return;
       }
-      const targetLength = (activeLength !== null && !guesses[activeLength]) ? activeLength : Math.max(...unfilled);
+      const focusedEl = document.activeElement;
+      const focusedLength = (focusedEl && focusedEl.id && focusedEl.id.startsWith('rung-input-')) ? Number(focusedEl.dataset.length) : null;
+      const targetLength = (focusedLength !== null && !guesses[focusedLength])
+        ? focusedLength
+        : (activeLength !== null && !guesses[activeLength]) ? activeLength : Math.max(...unfilled);
       const dayHints = (typeof HINTS_SCHEDULE !== 'undefined' && HINTS_SCHEDULE[dateKey]) || null;
       const tierHint = dayHints ? dayHints[activeTier] : null;
       const targetWord = tierHint ? tierHint.solution.find(w => w.length === targetLength) : null;
@@ -2380,6 +2384,7 @@ function render(focusInput = false, pendingErrors = null){
       // on-screen backspace button.
       if(bankState[activeTier]){
         const order = bankState[activeTier].order;
+        const stableIds = bankState[activeTier].stableIds;
         const arr = bankState[activeTier].usedIndices;
         if(!bankSyncSkip){
           // Genuine keyboard-driven change (typed or backspaced directly) -
@@ -2388,17 +2393,17 @@ function render(focusInput = false, pendingErrors = null){
           while(arr.length < activeInput.value.length){
             const ch = activeInput.value[arr.length].toLowerCase();
             const usedSet = new Set(arr);
-            const idx = order.findIndex((letter, i) => letter.toLowerCase() === ch && !usedSet.has(i));
+            const idx = order.findIndex((letter, i) => letter.toLowerCase() === ch && !usedSet.has(stableIds[i]));
             if(idx === -1) break;
-            arr.push(idx);
+            arr.push(stableIds[idx]);
           }
         }
         bankSyncSkip = false;
         const usedSet = new Set(arr);
         const tileEls = panel.querySelectorAll('.bank-tile');
         tileEls.forEach((tileEl) => {
-          const idx = Number(tileEl.dataset.index);
-          if(usedSet.has(idx)){
+          const stableId = Number(tileEl.dataset.stableId);
+          if(usedSet.has(stableId)){
             tileEl.classList.add('used');
             tileEl.disabled = true;
           } else {
