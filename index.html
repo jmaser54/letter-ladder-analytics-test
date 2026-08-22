@@ -258,11 +258,11 @@
     margin-top: 22px;
   }
   .bank-ctrl-btn{
-    width: 40px; height: 40px;
+    width: 46px; height: 46px;
     border: none; border-radius: 10px;
     background: rgba(245,239,224,0.08);
     color: var(--ink);
-    font-size: 1.35rem;
+    font-size: 1.5rem;
     display: flex; align-items:center; justify-content:center;
     cursor: pointer;
     padding: 0;
@@ -294,7 +294,7 @@
 
   .actions-row{ display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:10px; flex-shrink:0; }
   .hint-display{
-    text-align:center; margin-top:10px; font-size:0.85rem; color: var(--ink-dim);
+    text-align:center; margin-top:10px; margin-bottom:18px; font-size:0.85rem; color: var(--ink-dim);
     font-style:italic; flex-shrink:0; min-height: 0;
   }
   .hint-display .hint-letters{ color: var(--amber); font-style:normal; font-weight:600; letter-spacing:0.04em; }
@@ -1438,7 +1438,7 @@ function buildShareText(){
         // hints still get shown alongside it though, since that's
         // distinct, meaningful info about how much help was needed.
         line = hints > 0
-          ? `${tierLabels[tier]}: ${'💡'.repeat(hints)} ${timeSuffix}`
+          ? `${tierLabels[tier]}: ${timeSuffix} ${'💡'.repeat(hints)}`
           : `${tierLabels[tier]}: ${timeSuffix}`;
       } else {
         line = hints > 0
@@ -1869,7 +1869,7 @@ function render(focusInput = false, pendingErrors = null){
     // No keyboard-toggle at all on desktop - a physical keyboard is
     // always available there, so there's nothing to toggle.
     if(isTouchDevice){
-      const kbIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"></rect><line x1="6" y1="9.5" x2="6" y2="9.5"></line><line x1="9.5" y1="9.5" x2="9.5" y2="9.5"></line><line x1="13" y1="9.5" x2="13" y2="9.5"></line><line x1="16.5" y1="9.5" x2="16.5" y2="9.5"></line><line x1="19.5" y1="9.5" x2="19.5" y2="9.5"></line><line x1="6" y1="13" x2="6" y2="13"></line><line x1="9.5" y1="13" x2="9.5" y2="13"></line><line x1="13" y1="13" x2="13" y2="13"></line><line x1="16.5" y1="13" x2="16.5" y2="13"></line><line x1="19.5" y1="13" x2="19.5" y2="13"></line><line x1="8" y1="16" x2="16" y2="16"></line></svg>`;
+      const kbIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"></rect><line x1="6" y1="9.5" x2="6" y2="9.5"></line><line x1="9.5" y1="9.5" x2="9.5" y2="9.5"></line><line x1="13" y1="9.5" x2="13" y2="9.5"></line><line x1="16.5" y1="9.5" x2="16.5" y2="9.5"></line><line x1="19.5" y1="9.5" x2="19.5" y2="9.5"></line><line x1="6" y1="13" x2="6" y2="13"></line><line x1="9.5" y1="13" x2="9.5" y2="13"></line><line x1="13" y1="13" x2="13" y2="13"></line><line x1="16.5" y1="13" x2="16.5" y2="13"></line><line x1="19.5" y1="13" x2="19.5" y2="13"></line><line x1="8" y1="16" x2="16" y2="16"></line></svg>`;
       kbToggleHtml = `<button type="button" class="bank-ctrl-btn bank-group-spacer ${keyboardEnabled ? 'kb-on' : ''}" id="keyboard-toggle-btn" aria-label="Toggle keyboard">${kbIcon}</button>`;
     }
     bankHtml = `
@@ -1880,8 +1880,8 @@ function render(focusInput = false, pendingErrors = null){
     `;
   }
 
-  const trashIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
-  const lightbulbIcon = `<svg width="22" height="22" viewBox="0 0 24 24"><path d="M9 21h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path><path d="M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path><path d="M12 3a6.5 6.5 0 0 0-4 11.6c.7.6 1.2 1.5 1.3 2.4h5.4c.1-.9.6-1.8 1.3-2.4A6.5 6.5 0 0 0 12 3z" fill="#F5C842" stroke="#F5C842" stroke-width="1.3" stroke-linejoin="round"></path></svg>`;
+  const trashIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+  const lightbulbIcon = `<svg width="26" height="26" viewBox="0 0 24 24"><path d="M9 21h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path><path d="M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path><path d="M12 3a6.5 6.5 0 0 0-4 11.6c.7.6 1.2 1.5 1.3 2.4h5.4c.1-.9.6-1.8 1.3-2.4A6.5 6.5 0 0 0 12 3z" fill="#F5C842" stroke="#F5C842" stroke-width="1.3" stroke-linejoin="round"></path></svg>`;
   // Hint always targets the highest unfilled rung. Up to two hints are
   // allowed per rung (first reveals the letter set, second reveals the
   // first letter) - once both have been used for this specific target,
@@ -2022,6 +2022,10 @@ function render(focusInput = false, pendingErrors = null){
       if(skipNextBankTap){ skipNextBankTap = false; return; } // this tap was actually the release of a drag - don't also select the letter
       const inputEl = document.getElementById(`rung-input-${activeLength}`);
       if(!inputEl) return;
+      if(inputEl.selectionStart === 0 && inputEl.selectionEnd === inputEl.value.length && inputEl.value.length > 0){
+        inputEl.value = '';
+        if(bankState[activeTier]) bankState[activeTier].usedIndices = [];
+      }
       if(inputEl.value.length >= Number(inputEl.maxLength)) return; // already full
       inputEl.value += tile.dataset.letter;
       // Track the EXACT tile instance tapped, so this specific tile (not
@@ -2269,6 +2273,21 @@ function render(focusInput = false, pendingErrors = null){
 
     activeInput.addEventListener('keydown', (e)=>{
       if(e.key === 'Enter'){ e.preventDefault(); tryCommitViaEnter(); return; }
+      if((e.key === 'Backspace' || e.key === 'Delete') && activeInput.selectionStart === 0 && activeInput.selectionEnd === activeInput.value.length && activeInput.value.length > 0){
+        // The entire guess is currently selected (this happens right
+        // after opening an already-filled rung, since .select() gets
+        // called then) - clear it fully, matching exactly what the red
+        // X button does, rather than just emptying the input's text.
+        e.preventDefault();
+        const L = activeLength;
+        const currentGuesses = loadGuesses(activeTier);
+        delete currentGuesses[L];
+        saveGuesses(activeTier, currentGuesses);
+        bankState[activeTier] = null;
+        activeInput.value = '';
+        render(true);
+        return;
+      }
       // Only letters that actually appear in the top (final) word can be
       // typed, and only up to as many times as they actually appear there -
       // this can't guarantee a correct guess, but it stops obviously
