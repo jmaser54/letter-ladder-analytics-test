@@ -820,6 +820,7 @@ let activeTier = (function(){
 let activeLength = null; // which rung (by word length) is currently being typed into
 let skipNextBankTap = false; // true right after a drag-reorder finishes, so its release isn't also read as a letter-select tap
 let activeSlotHasUntouchedGuess = false; // true right after opening a rung that already had a complete guess, until the first real edit happens - lets the next bank-tile tap or Backspace/Delete replace/clear it outright instead of appending onto or partially editing the old guess
+let suppressBlurCommit = false; // true only while the panel is mid-rebuild, so the blur fired by destroying the focused input isn't mistaken for the person clicking away
 let lastEnterCommitAt = 0; // guards against iOS sometimes firing two separate
                             // "Enter was pressed" signals for one keypress
 let lastFeedback = {}; // per-tier: the last shown error, so it survives a
@@ -1889,7 +1890,7 @@ function render(focusInput = false, pendingErrors = null){
         `<button type="button" class="bank-tile ${belowMatchSet.has(i) ? 'from-below' : ''} ${usedSet.has(stableIds[i]) ? 'used' : ''}" data-letter="${letter}" data-index="${i}" data-stable-id="${stableIds[i]}" ${usedSet.has(stableIds[i]) ? 'disabled' : ''}>${letter.toUpperCase()}</button>`
       ).join('');
       bankTilesHtml = `<div class="bank-tiles" id="bank-tiles">${tilesHtml}</div>`;
-      const backspaceIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6H9l-6 6 6 6h11a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1Z"></path><line x1="8.5" y1="9" x2="14.5" y2="15"></line><line x1="14.5" y1="9" x2="8.5" y2="15"></line></svg>`;
+      const backspaceIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6H9l-6 6 6 6h11a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1Z"></path><line x1="12" y1="9" x2="18" y2="15"></line><line x1="18" y1="9" x2="12" y2="15"></line></svg>`;
       backspaceButtonHtml = `<button type="button" class="bank-primary-btn bank-submit-btn" id="bank-backspace-btn" aria-label="Delete last letter">${backspaceIcon}</button>`;
     }
     // No keyboard-toggle at all on desktop - a physical keyboard is
@@ -1920,6 +1921,14 @@ function render(focusInput = false, pendingErrors = null){
   const anyTierSolvedToday = TIERS.some(tier => getTodaysPuzzle(tier) && isTierComplete(tier));
 
   panel.className = `panel ${sizeTier}`;
+  // Replacing the panel's contents destroys the currently focused input.
+  // On desktop (where the input is genuinely focused) that fires a blur,
+  // which would otherwise be mistaken for the person clicking away and
+  // trigger commit() - resetting activeLength and re-selecting the
+  // highest unfilled rung, clobbering whichever rung they actually just
+  // clicked into. Mobile rarely focuses the input at all, which is why
+  // this only ever showed up on desktop.
+  suppressBlurCommit = true;
   panel.innerHTML = `
     <div class="ladder-scroll" id="ladder-scroll"><div class="ladder">${rungsHtml.join('')}</div></div>
     <div class="feedback ${feedbackClassFinal}">${feedbackHtml}</div>
@@ -1933,6 +1942,7 @@ function render(focusInput = false, pendingErrors = null){
     </div>
     <div class="share-status" id="share-status"></div>
   `;
+  suppressBlurCommit = false;
 
   const lastHintedLength = getLastHintedLength(activeTier);
   if(lastHintedLength !== null && !guesses[lastHintedLength]){
@@ -1995,10 +2005,14 @@ function render(focusInput = false, pendingErrors = null){
   if(shuffleBtn){
     bindTapAction(shuffleBtn, ()=>{
       const order = bankState[activeTier].order;
-      // Fisher-Yates shuffle, in place
+      const stableIds = bankState[activeTier].stableIds;
+      // Fisher-Yates shuffle, in place - stableIds must move in lockstep
+      // with order, since stableIds[i] describes order[i]. Shuffling only
+      // one of them would scramble which tile each used-marker points to.
       for(let i = order.length - 1; i > 0; i--){
         const j = Math.floor(Math.random() * (i + 1));
         [order[i], order[j]] = [order[j], order[i]];
+        [stableIds[i], stableIds[j]] = [stableIds[j], stableIds[i]];
       }
       render(true);
     });
@@ -2427,7 +2441,13 @@ function render(focusInput = false, pendingErrors = null){
         setTimeout(() => commit(true), 0);
       }
     });
-    activeInput.addEventListener('blur', ()=> commit(false));
+    activeInput.addEventListener('blur', ()=>{
+      // Ignore blurs caused by our own re-render tearing down this input,
+      // rather than the person genuinely clicking away from the puzzle.
+      if(suppressBlurCommit) return;
+      if(activeInput.isConnected === false) return;
+      commit(false);
+    });
   }
 
   const ladderScroll = document.getElementById('ladder-scroll');
