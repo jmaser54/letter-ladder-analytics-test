@@ -875,6 +875,39 @@ function importMigrationDataIfPresent(){
     const data = JSON.parse(decodeURIComponent(migrateParam));
     let importedCount = 0;
     for(const [key, value] of Object.entries(data)){
+      if(key === STATS_KEY){
+        // Stats get a genuine field-by-field merge rather than an
+        // all-or-nothing replace, since someone may have already played
+        // a bit on this domain before migrating - a whole-object
+        // replace would silently throw away whichever side didn't win,
+        // rather than combining them. Unlike every other key below,
+        // summing isn't naturally safe to repeat - re-running the same
+        // migration link would double the numbers each time - so this
+        // is explicitly guarded to only ever merge once.
+        if(localStorage.getItem('letterladder:statsMigrationApplied')){
+          continue;
+        }
+        const incoming = JSON.parse(value);
+        const existing = loadStats();
+        const merged = {};
+        for(const tier of ['easy','medium','hard','total']){
+          const a = existing[tier] || blankStat();
+          const b = incoming[tier] || blankStat();
+          const aMoreRecent = (a.lastSolvedDate || '') >= (b.lastSolvedDate || '');
+          merged[tier] = {
+            played: (a.played || 0) + (b.played || 0),
+            solved: (a.solved || 0) + (b.solved || 0),
+            score: (a.score || 0) + (b.score || 0),
+            maxStreak: Math.max(a.maxStreak || 0, b.maxStreak || 0),
+            lastSolvedDate: aMoreRecent ? a.lastSolvedDate : b.lastSolvedDate,
+            currentStreak: aMoreRecent ? (a.currentStreak || 0) : (b.currentStreak || 0),
+          };
+        }
+        saveStats(merged);
+        localStorage.setItem('letterladder:statsMigrationApplied', '1');
+        importedCount++;
+        continue;
+      }
       // Only fill in keys that aren't already present locally, so this
       // never overwrites any fresh progress already made on the new
       // domain before clicking the migration link.
@@ -928,8 +961,6 @@ function showMigrationLinkBannerIfNeeded(){
     banner.remove();
   });
 }
-
-importMigrationDataIfPresent();
 
 const { key: dateKey, isArchive: isArchiveMode } = resolveDateKey();
 
@@ -1025,6 +1056,7 @@ function loadStats(){
 function saveStats(stats){
   try{ localStorage.setItem(STATS_KEY, JSON.stringify(stats)); }catch(e){}
 }
+importMigrationDataIfPresent(); // deferred to here so STATS_KEY/blankStat/loadStats/saveStats above are safely initialized before the merge logic can reference them
 function dateKeyMinusOneDay(key){
   const [y,m,d] = key.split('-').map(Number);
   const dt = new Date(y, m-1, d);
