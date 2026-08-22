@@ -269,7 +269,7 @@
     line-height: 1;
   }
   .bank-ctrl-btn:active{ transform: scale(0.92); }
-  .bank-ctrl-btn.kb-on{ background: var(--blue); color: #1B2A41; }
+  .bank-ctrl-btn.kb-on{ background: var(--bg); color: var(--ink); }
   .bank-ctrl-btn.bank-submit-btn{ background: var(--amber); color: #1B2A41; }
   .bank-ctrl-btn.bank-group-spacer{ margin-left: 14px; }
 
@@ -293,7 +293,7 @@
   .bank-primary-btn:active{ transform: scale(0.96); }
   .bank-primary-btn.bank-submit-btn{ background: var(--amber); color: #1B2A41; }
 
-  .actions-row{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-top:10px; flex-shrink:0; }
+  .actions-row{ display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:10px; margin-top:10px; flex-shrink:0; }
   .hint-display{
     text-align:center; margin-top:10px; margin-bottom:18px; font-size:0.85rem; color: var(--ink-dim);
     font-style:italic; flex-shrink:0; min-height: 0;
@@ -2403,7 +2403,7 @@ function render(focusInput = false, pendingErrors = null){
       // reaching the exact length a guess needs is itself the signal
       // that it's ready to be evaluated.
       if(activeInput.value.length === Number(activeInput.maxLength) && activeInput.value.length > 0){
-        commit(true);
+        setTimeout(() => commit(true), 0);
       }
     });
     activeInput.addEventListener('blur', ()=> commit(false));
