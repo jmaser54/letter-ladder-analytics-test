@@ -807,6 +807,7 @@ let activeTier = (function(){
 })();
 let activeLength = null; // which rung (by word length) is currently being typed into
 let skipNextBankTap = false; // true right after a drag-reorder finishes, so its release isn't also read as a letter-select tap
+let activeSlotHasUntouchedGuess = false; // true right after opening a rung that already had a complete guess, until the first real edit happens - lets the next bank-tile tap or Backspace/Delete replace/clear it outright instead of appending onto or partially editing the old guess
 let lastEnterCommitAt = 0; // guards against iOS sometimes firing two separate
                             // "Enter was pressed" signals for one keypress
 let lastFeedback = {}; // per-tier: the last shown error, so it survives a
@@ -818,6 +819,7 @@ const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 let keyboardEnabled = isTouchDevice ? (localStorage.getItem('letterladder:keyboardEnabled') === 'true') : true; // bank-first on mobile, always-on on desktop
 const OLD_DOMAIN_HOSTNAME = 'jmaser54.github.io';
+const OLD_DOMAIN_PATH_PREFIX = '/letter-ladder/';
 const NEW_DOMAIN_HOSTNAME = 'letterladder.io';
 
 function collectMigratableData(){
@@ -893,6 +895,7 @@ function showMigrationWelcomeBannerIfNeeded(){
 
 function showMigrationLinkBannerIfNeeded(){
   if(window.location.hostname !== OLD_DOMAIN_HOSTNAME) return;
+  if(window.location.pathname !== OLD_DOMAIN_PATH_PREFIX) return;
   if(localStorage.getItem('letterladder:migrationBannerDismissed')) return;
   const data = collectMigratableData();
   if(Object.keys(data).length === 0) return; // nothing meaningful to offer migrating
@@ -1893,9 +1896,9 @@ function render(focusInput = false, pendingErrors = null){
   const showHintBtn = !isWon && !hintMaxedForTarget;
   const iconControlsHtml = `
     <div class="bank-controls">
-      <button class="bank-ctrl-btn" id="clear-btn" type="button" aria-label="Clear guesses">${trashIcon}</button>
       ${!isWon && activeLength != null ? `<button type="button" class="bank-ctrl-btn" id="shuffle-btn" aria-label="Shuffle letters">🔀</button>` : ''}
       ${showHintBtn ? `<button class="bank-ctrl-btn" id="hint-btn" type="button" aria-label="Hint">${lightbulbIcon}</button>` : ''}
+      <button class="bank-ctrl-btn" id="clear-btn" type="button" aria-label="Clear guesses">${trashIcon}</button>
       ${!isWon && activeLength != null ? kbToggleHtml : ''}
     </div>
   `;
@@ -2022,7 +2025,8 @@ function render(focusInput = false, pendingErrors = null){
       if(skipNextBankTap){ skipNextBankTap = false; return; } // this tap was actually the release of a drag - don't also select the letter
       const inputEl = document.getElementById(`rung-input-${activeLength}`);
       if(!inputEl) return;
-      if(inputEl.selectionStart === 0 && inputEl.selectionEnd === inputEl.value.length && inputEl.value.length > 0){
+      if(activeSlotHasUntouchedGuess){
+        activeSlotHasUntouchedGuess = false;
         inputEl.value = '';
         if(bankState[activeTier]) bankState[activeTier].usedIndices = [];
       }
@@ -2081,7 +2085,9 @@ function render(focusInput = false, pendingErrors = null){
 
   panel.querySelectorAll('.rung.clickable').forEach(el => {
     bindTapAction(el, ()=>{
-      activeLength = Number(el.dataset.length);
+      const L = Number(el.dataset.length);
+      activeSlotHasUntouchedGuess = !!guesses[L];
+      activeLength = L;
       render(true);
     });
   });
@@ -2273,12 +2279,13 @@ function render(focusInput = false, pendingErrors = null){
 
     activeInput.addEventListener('keydown', (e)=>{
       if(e.key === 'Enter'){ e.preventDefault(); tryCommitViaEnter(); return; }
-      if((e.key === 'Backspace' || e.key === 'Delete') && activeInput.selectionStart === 0 && activeInput.selectionEnd === activeInput.value.length && activeInput.value.length > 0){
-        // The entire guess is currently selected (this happens right
-        // after opening an already-filled rung, since .select() gets
-        // called then) - clear it fully, matching exactly what the red
-        // X button does, rather than just emptying the input's text.
+      if(activeSlotHasUntouchedGuess && (e.key === 'Backspace' || e.key === 'Delete')){
+        // This rung already had a complete guess when it was opened, and
+        // nothing's been edited yet - clear it fully, matching exactly
+        // what the red X button does, rather than a normal character-by-
+        // character delete.
         e.preventDefault();
+        activeSlotHasUntouchedGuess = false;
         const L = activeLength;
         const currentGuesses = loadGuesses(activeTier);
         delete currentGuesses[L];
@@ -2287,6 +2294,14 @@ function render(focusInput = false, pendingErrors = null){
         activeInput.value = '';
         render(true);
         return;
+      }
+      if(activeSlotHasUntouchedGuess && e.key.length === 1 && /^[a-zA-Z]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey){
+        // Same situation, but the first action is typing a new letter
+        // rather than deleting - start the new guess fresh instead of
+        // appending onto the old one still sitting in the box.
+        activeSlotHasUntouchedGuess = false;
+        activeInput.value = '';
+        if(bankState[activeTier]) bankState[activeTier].usedIndices = [];
       }
       // Only letters that actually appear in the top (final) word can be
       // typed, and only up to as many times as they actually appear there -
